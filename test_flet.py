@@ -166,6 +166,10 @@ def main(page: ft.Page):
     page.window.width = 640
     page.window.height = 900
 
+    page.title = "Containers - clickable and not"
+    page.vertical_alignment = ft.MainAxisAlignment.CENTER
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+
     # Lista de varas federais do Enum
     varas_federais = [vara.value for vara in VarasFederais]
 
@@ -199,32 +203,44 @@ def main(page: ft.Page):
             varas_selecionadas.remove(varas)
             update_varas_selecionadas()
             update_dropdown_options()
+    
 
     def update_varas_selecionadas():
+        # Garante que `selected_varas_list` seja um Container ou algo que possa conter uma lista de controles
         selected_varas_list.controls = [
-            ft.Row(
-                controls=[
-                    ft.Container(
-                        content=ft.Text(varas, size=10),
-                        width=get_text_width(varas, 10) + 40,  # Ajusta a largura do container com base no tamanho do texto + margem
-                        height=25,
-                        bgcolor=ft.colors.BLUE,
-                        padding=5,
-                        margin=5
-                    ),
-                    ft.IconButton(
-                        icon=ft.icons.CLOSE,
-                        icon_size=20,
-                        on_click=lambda e, v=varas: remove_varas(v),
-                        tooltip="Remover"
-                    )
-                ],
-                alignment=ft.MainAxisAlignment.CENTER
+            ft.Container(
+                content=ft.Row(
+                    controls=[
+                        ft.Container(
+                            content=ft.Text(varas, size=10),
+                            width=get_text_width(varas, 10),  # Ajusta a largura do container com base no tamanho do texto + margem
+                            height=25,
+                            bgcolor=ft.colors.BLUE,
+                            padding=0,
+                            margin=0,
+                            alignment=ft.alignment.center,
+                            border_radius=25,
+                            ink=True,
+                            on_click=lambda e: print("Clickable with Ink clicked!"),
+                        ),
+                        ft.IconButton(
+                            icon=ft.icons.CLOSE,
+                            icon_size=15,
+                            on_click=lambda e, v=varas: remove_varas(v),
+                            tooltip="Remover",
+                        )
+                    ],
+                    alignment=ft.MainAxisAlignment.START,  # Alinha os itens na horizontal
+                    #spacing=10  # Adiciona espaçamento entre os itens
+                ),
+                # padding=5,
+                # margin=5,
+                # border_radius=5,
+                # bgcolor=ft.colors.WHITE
             )
             for varas in varas_selecionadas
         ]
         page.update()
-
 
     def update_dropdown_options():
         available_options = [vara for vara in varas_federais if vara not in varas_selecionadas]
@@ -249,23 +265,27 @@ def main(page: ft.Page):
     selected_varas_list = ft.Column(
         controls=[
             ft.Row(
-                controls=[
+                [
                     ft.Container(
                         content=ft.Text(varas, size=10),
-                        width=get_text_width(varas, 10) + 40,  # Ajusta a largura do container com base no tamanho do texto + margem
+                        width=get_text_width(varas, 10),  # Ajusta a largura do container com base no tamanho do texto + margem
                         height=25,
                         bgcolor=ft.colors.BLUE,
-                        padding=5,
-                        margin=5
+                        padding=0,
+                        margin=0,
+                        alignment=ft.alignment.center,
+                        border_radius=25,
+                        ink=True,
+                        on_click=lambda e: print("Clickable with Ink clicked!"),
                     ),
                     ft.IconButton(
                         icon=ft.icons.CLOSE,
-                        icon_size=20,
+                        icon_size=15,
                         on_click=lambda e, v=varas: remove_varas(v),
-                        tooltip="Remover"
+                        tooltip="Remover",
                     )
                 ],
-                alignment=ft.MainAxisAlignment.CENTER
+                alignment=ft.MainAxisAlignment.START,  # Alinha os itens na horizontal
             ) for varas in varas_selecionadas
         ]
     )
