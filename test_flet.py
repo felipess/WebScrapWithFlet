@@ -46,7 +46,14 @@ def atualizar_resultados(resultados):
         rows = []
         for resultado in resultados:
             # Cada resultado deve ser uma lista de strings para ser exibido na tabela
-            row_cells = [ft.DataCell(ft.Text(cell, size=10)) for cell in resultado]
+            # Cada resultado deve ser uma lista de strings para ser exibido na tabela
+            row_cells = [ft.DataCell(
+                content=ft.Container(
+                    content=ft.Text(cell, size=10),
+                    height=100,  # Aumenta a altura das células
+                    padding=ft.Padding(left=15, right=15, top=10, bottom=10),  # Aumenta o padding
+                )
+            ) for cell in resultado]            
             rows.append(ft.DataRow(cells=row_cells))
         
         # Criar a tabela
@@ -61,6 +68,9 @@ def atualizar_resultados(resultados):
                 ft.DataColumn(ft.Text("Sistema", size=10)),
             ],
             rows=rows,
+            data_row_min_height=80,  # Altura mínima das linhas de dados
+            data_row_max_height=160,  # Altura máxima das linhas de dados
+            column_spacing=0,       # Espaçamento entre colunas, se necessário
         )
         
         # Atualizar a página com a nova tabela
@@ -217,17 +227,17 @@ def main(pg: ft.Page):
     # Lista de varas selecionadas iniciais com labels personalizados
     varas_selecionadas_iniciais = [
         VarasFederais.VARA_GUAIRA.value,
-        VarasFederais.VARA_FOZ_3.value,
-        VarasFederais.VARA_UMUARAMA_1.value,
-        VarasFederais.VARA_PONTA_GROSSA_1.value,
-        VarasFederais.VARA_MARINGA_3.value,
-        VarasFederais.VARA_CASCAVEL_4.value,
-        VarasFederais.VARA_FOZ_5.value,
-        VarasFederais.VARA_LONDRINA_5.value,
-        VarasFederais.VARA_CURITIBA_9.value,
-        VarasFederais.VARA_CURITIBA_13.value,
-        VarasFederais.VARA_CURITIBA_14.value,
-        VarasFederais.VARA_CURITIBA_23.value,
+        # VarasFederais.VARA_FOZ_3.value,
+        # VarasFederais.VARA_UMUARAMA_1.value,
+        # VarasFederais.VARA_PONTA_GROSSA_1.value,
+        # VarasFederais.VARA_MARINGA_3.value,
+        # VarasFederais.VARA_CASCAVEL_4.value,
+        # VarasFederais.VARA_FOZ_5.value,
+        # VarasFederais.VARA_LONDRINA_5.value,
+        # VarasFederais.VARA_CURITIBA_9.value,
+        # VarasFederais.VARA_CURITIBA_13.value,
+        # VarasFederais.VARA_CURITIBA_14.value,
+        # VarasFederais.VARA_CURITIBA_23.value,
     ]
 
     varas_selecionadas = varas_selecionadas_iniciais.copy()
