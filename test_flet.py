@@ -46,19 +46,19 @@ def atualizar_resultados(resultados):
         rows = []
         for resultado in resultados:
             # Cada resultado deve ser uma lista de strings para ser exibido na tabela
-            row_cells = [ft.DataCell(ft.Text(cell, size=12)) for cell in resultado]
+            row_cells = [ft.DataCell(ft.Text(cell, size=10)) for cell in resultado]
             rows.append(ft.DataRow(cells=row_cells))
         
         # Criar a tabela
         table = ft.DataTable(
             columns=[
-                ft.DataColumn(ft.Text("Data/Hora", size=12)),
-                ft.DataColumn(ft.Text("Autos", size=12)),
-                ft.DataColumn(ft.Text("Classe", size=12)),
-                ft.DataColumn(ft.Text("Processo", size=12)),
-                ft.DataColumn(ft.Text("Parte", size=12)),
-                ft.DataColumn(ft.Text("Status", size=12)),
-                ft.DataColumn(ft.Text("Sistema", size=12)),
+                ft.DataColumn(ft.Text("Data/Hora", size=10)),
+                ft.DataColumn(ft.Text("Autos", size=10)),
+                ft.DataColumn(ft.Text("Classe", size=10)),
+                ft.DataColumn(ft.Text("Processo", size=10)),
+                ft.DataColumn(ft.Text("Parte", size=10)),
+                ft.DataColumn(ft.Text("Status", size=10)),
+                ft.DataColumn(ft.Text("Sistema", size=10)),
             ],
             rows=rows,
         )
@@ -89,7 +89,7 @@ def executar_consulta(page):
     options.add_argument('--disable-dev-shm-usage')
 
     driver = webdriver.Chrome(options=options)
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 30)  # Aumentando o tempo de espera
 
     try:
         resultados = []
@@ -130,8 +130,14 @@ def executar_consulta(page):
                 botao_consultar = wait.until(EC.element_to_be_clickable((By.ID, "btnConsultar")))
                 botao_consultar.click()
 
-                div_infra_area_tabela = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
-                tabela = driver.find_element(By.ID, "tblAudienciasEproc")
+                # Verificar se há a mensagem de "Nenhum resultado encontrado"
+                mensagem_erro = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
+                if "Nenhum resultado encontrado" in mensagem_erro.text:
+                    print(f"Nenhum resultado encontrado para {vara}")
+                    continue
+
+                # Esperar até que a tabela esteja presente
+                tabela = wait.until(EC.presence_of_element_located((By.ID, "tblAudienciasEproc")))
                 linhas = tabela.find_elements(By.TAG_NAME, "tr")
 
                 for linha in linhas:
@@ -139,27 +145,29 @@ def executar_consulta(page):
                     if any(termo in texto_normalizado for termo in ["custódia", "custodia"]):
                         tds = linha.find_elements(By.TAG_NAME, "td")
                         conteudo_linha = []
+                        erro_encontrado = False
                         for td in tds:
                             td_html = td.get_attribute('innerHTML')
                             td_soup = BeautifulSoup(td_html, 'html.parser')
                             td_text = td_soup.get_text(separator=" ").strip()
+                            if "ocorreu um erro" in td_text.lower():
+                                erro_encontrado = True
+                                break
                             conteudo_linha.append(td_text)
-                        if len(conteudo_linha) == len(titulos):
+                        if not erro_encontrado and len(conteudo_linha) == len(titulos):
                             resultados.append(conteudo_linha)
-                        else:
-                            resultados.append([""] * len(titulos))
-                if not resultados:
-                    resultados.append([""] * len(titulos))
 
             except Exception as e:
                 print(f"Erro ao consultar a vara {vara}: {e}")
-                resultados.append(["Ocorreu um erro na consulta"] * len(titulos))
 
-            atualizar_resultados(resultados)
+        if not resultados:
+            resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se nenhum resultado válido
+
+        atualizar_resultados(resultados)
 
     except Exception as e:
         print(f"Erro geral: {e}")
-        resultados.append(["Ocorreu um erro durante a consulta"] * len(titulos))
+        resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se houver um erro geral
         atualizar_resultados(resultados)
         
     finally:
@@ -197,11 +205,6 @@ def main(pg: ft.Page):
 
     varas_selecionadas = varas_selecionadas_iniciais.copy()
 
-    # Definindo datas padrão
-    hoje = datetime.datetime.now()
-    data_inicio_default = hoje.strftime("%d/%m/%Y")
-    data_fim_default = (hoje + datetime.timedelta(days=1)).strftime("%d/%m/%Y")    
-
     def add_varas(e):
         if varas_dropdown.value and varas_dropdown.value not in varas_selecionadas:
             varas_selecionadas.append(varas_dropdown.value)
@@ -217,7 +220,7 @@ def main(pg: ft.Page):
     def update_varas_selecionadas():
         selected_varas_list.controls = [
             ft.Container(
-                content=ft.Row(
+                content=ft.ResponsiveRow(
                     controls=[
                         ft.Container(
                             content=ft.Text(varas, size=10),
@@ -225,38 +228,29 @@ def main(pg: ft.Page):
                             height=25,
                             bgcolor=ft.colors.BLUE,
                             padding=0,
-                            margin=0,
-                            alignment=ft.alignment.center,
-                            border_radius=25,
-                            ink=True,
-                            on_click=lambda e: print("Clickable with Ink clicked!"),
+                            border_radius=25
                         ),
                         ft.IconButton(
-                            icon=ft.icons.CLOSE,
-                            icon_size=15,
+                            icon=ft.icons.DELETE_FOREVER,
+                            icon_color=ft.colors.WHITE,
                             on_click=lambda e, v=varas: remove_varas(v),
-                            tooltip="Remover",
-                        )
+                            icon_size=12,
+                        ),
                     ],
-                    alignment=ft.MainAxisAlignment.START,
+                    spacing=5,
                 ),
+                padding=5,
+                col={"xs": 6, "sm": 3, "md": 3, "lg": 2, "xl": 2, "xxl": 1},  # Ajustar para diferentes tamanhos de tela
             )
             for varas in varas_selecionadas
         ]
-        if not selected_varas_list.controls:
-            selected_varas_list.controls.append(
-                ft.Container(
-                    content=ft.Text("Nenhuma vara selecionada", size=12),
-                    padding=0,
-                    margin=0,
-                    width=580,
-                    height=25,
-                )
-            )
         page.update()
 
     def update_dropdown_options():
-        varas_dropdown.options = [ft.dropdown.Option(varas) for varas in varas_federais if varas not in varas_selecionadas]
+        varas_dropdown.options = [
+            ft.dropdown.Option(varas)
+            for varas in varas_federais if varas not in varas_selecionadas
+        ]
         page.update()
 
     varas_dropdown = ft.Dropdown(
@@ -264,41 +258,53 @@ def main(pg: ft.Page):
         on_change=add_varas,
     )
 
-    selected_varas_list = ft.Column(
+    selected_varas_list = ft.ResponsiveRow(
         controls=[
             ft.Container(
-                content=ft.Text("Nenhuma vara selecionada", size=12),
-                padding=0,
-                margin=0,
-                width=580,
-                height=25,
+                content=ft.ResponsiveRow(
+                    controls=[
+                        ft.Container(
+                            content=ft.Text(varas, size=10),
+                            width=get_text_width(varas, 10),
+                            height=25,
+                            bgcolor=ft.colors.BLUE,
+                            padding=0,
+                            border_radius=25  # Adicionando border radius
+                        ),
+                        ft.IconButton(
+                            icon=ft.icons.DELETE_FOREVER, #or DELETE
+                            icon_color=ft.colors.WHITE,
+                            on_click=lambda e, v=varas: remove_varas(v),
+                            icon_size=12,  # Tamanho reduzido do ícone
+                        ),
+                    ],
+                    spacing=5,
+                    col={"xs": 12, "sm": 6, "md": 4, "lg": 3, "xl": 2, "xxl": 1},  # Ajustar para diferentes tamanhos de tela
+                ),
+                padding=5,
             )
-        ]
+            for varas in varas_selecionadas
+        ],
+        spacing=5,
+        run_spacing=10,
     )
 
-    spinner_label = ft.Text("", size=12)
-    
+    spinner_label = ft.Text("", size=12, color=ft.colors.BLUE_GREY_700)
+
     page.add(
         ft.Column(
             controls=[
                 entry_data_inicio,
                 entry_data_fim,
-                ft.Row(
-                    controls=[
-                        varas_dropdown,
-                        ft.ElevatedButton(text="Adicionar Vara", on_click=add_varas),
-                    ],
-                ),
+                varas_dropdown,
                 selected_varas_list,
                 start_button,
-                spinner_label,
-            ],
-            alignment=ft.MainAxisAlignment.CENTER,
+                spinner_label
+            ]
         )
     )
 
+    # Atualizar a lista de varas selecionadas ao carregar a página
     update_varas_selecionadas()
-    update_dropdown_options()
 
-if __name__ == "__main__":
-    ft.app(target=main)
+ft.app(target=main)
