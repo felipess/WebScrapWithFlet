@@ -8,6 +8,8 @@ import threading
 import time
 import datetime
 from VarasFederais import VarasFederais
+from bs4 import BeautifulSoup
+from selenium.webdriver.common.by import By
 
 # Variável global para o driver Selenium
 driver = None
@@ -46,31 +48,31 @@ def atualizar_resultados(resultados):
         rows = []
         for resultado in resultados:
             # Cada resultado deve ser uma lista de strings para ser exibido na tabela
-            # Cada resultado deve ser uma lista de strings para ser exibido na tabela
-            row_cells = [ft.DataCell(
-                content=ft.Container(
-                    content=ft.Text(cell, size=10),
-                    height=100,  # Aumenta a altura das células
-                    padding=ft.Padding(left=15, right=15, top=10, bottom=10),  # Aumenta o padding
-                )
-            ) for cell in resultado]            
+            # Certifique-se de que 'resultado' tem a mesma quantidade de células que as colunas exibidas
+            row_cells = [
+                ft.DataCell(ft.Text(resultado[0], size=12)),  # Data/Hora
+                ft.DataCell(ft.Text(resultado[1], size=12)),  # Autos
+                ft.DataCell(ft.Text(resultado[2], size=12)),  # Classe
+                ft.DataCell(ft.Text(resultado[3], size=12)),  # Processo
+                ft.DataCell(ft.Text(resultado[4], size=12)),  # Parte
+                # Excluindo Status e Sistema, então não adicione células para essas colunas
+            ]
             rows.append(ft.DataRow(cells=row_cells))
         
         # Criar a tabela
         table = ft.DataTable(
             columns=[
-                ft.DataColumn(ft.Text("Data/Hora", size=10)),
-                ft.DataColumn(ft.Text("Autos", size=10)),
-                ft.DataColumn(ft.Text("Classe", size=10)),
-                ft.DataColumn(ft.Text("Processo", size=10)),
-                ft.DataColumn(ft.Text("Parte", size=10)),
-                ft.DataColumn(ft.Text("Status", size=10)),
-                ft.DataColumn(ft.Text("Sistema", size=10)),
+                ft.DataColumn(ft.Text("Data/Hora", size=12)),
+                ft.DataColumn(ft.Text("Autos", size=12)),
+                ft.DataColumn(ft.Text("Classe", size=12)),
+                ft.DataColumn(ft.Text("Processo", size=12)),
+                ft.DataColumn(ft.Text("Parte", size=12)),
+                # Excluindo Status e Sistema das colunas
             ],
             rows=rows,
-            data_row_min_height=80,  # Altura mínima das linhas de dados
-            data_row_max_height=160,  # Altura máxima das linhas de dados
-            column_spacing=0,       # Espaçamento entre colunas, se necessário
+            data_row_min_height=60,  # Altura mínima das linhas de dados
+            data_row_max_height=80,  # Altura máxima das linhas de dados
+            column_spacing=20,       # Espaçamento entre colunas, se necessário
         )
         
         # Atualizar a página com a nova tabela
@@ -80,6 +82,7 @@ def atualizar_resultados(resultados):
         page.data_table = table
         page.add(table)
         page.update()
+
 
 def get_text_width(text, font_size):
     average_char_width = 7
@@ -159,7 +162,7 @@ def executar_consulta(page):
                         for td in tds:
                             td_html = td.get_attribute('innerHTML')
                             td_soup = BeautifulSoup(td_html, 'html.parser')
-                            td_text = td_soup.get_text(separator=" ").strip()
+                            td_text = td_soup.get_text(separator=" ").split("Classe:")[0].strip()  # Modificação aqui
                             if "ocorreu um erro" in td_text.lower():
                                 erro_encontrado = True
                                 break
