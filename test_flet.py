@@ -21,8 +21,23 @@ page = None
 varas_federais = []
 varas_selecionadas = []
 
-entry_data_inicio = ft.TextField(label="Data Início", value="15/07/2024")
-entry_data_fim = ft.TextField(label="Data Fim", value="19/07/2024")
+# Definição das datas padrão
+hoje = datetime.datetime.now()
+data_inicio_default = hoje.strftime("%d/%m/%Y")
+data_fim_default = (hoje + datetime.timedelta(days=1)).strftime("%d/%m/%Y")
+
+entry_data_inicio = ft.TextField(
+    label="Data Início",
+    value=data_inicio_default,
+    width=200,
+    text_style=ft.TextStyle(size=10)  # Tamanho da fonte ajustado para 10
+)
+entry_data_fim = ft.TextField(
+    label="Data Fim",
+    value=data_fim_default,
+    width=200,
+    text_style=ft.TextStyle(size=10)  # Tamanho da fonte ajustado para 10
+)
 
 def atualizar_resultados(resultados):
     global page
@@ -31,19 +46,19 @@ def atualizar_resultados(resultados):
         rows = []
         for resultado in resultados:
             # Cada resultado deve ser uma lista de strings para ser exibido na tabela
-            row_cells = [ft.DataCell(ft.Text(cell)) for cell in resultado]
+            row_cells = [ft.DataCell(ft.Text(cell, size=12)) for cell in resultado]
             rows.append(ft.DataRow(cells=row_cells))
         
         # Criar a tabela
         table = ft.DataTable(
             columns=[
-                ft.DataColumn(ft.Text("Data/Hora")),
-                ft.DataColumn(ft.Text("Autos")),
-                ft.DataColumn(ft.Text("Classe")),
-                ft.DataColumn(ft.Text("Processo")),
-                ft.DataColumn(ft.Text("Parte")),
-                ft.DataColumn(ft.Text("Status")),
-                ft.DataColumn(ft.Text("Sistema")),
+                ft.DataColumn(ft.Text("Data/Hora", size=12)),
+                ft.DataColumn(ft.Text("Autos", size=12)),
+                ft.DataColumn(ft.Text("Classe", size=12)),
+                ft.DataColumn(ft.Text("Processo", size=12)),
+                ft.DataColumn(ft.Text("Parte", size=12)),
+                ft.DataColumn(ft.Text("Status", size=12)),
+                ft.DataColumn(ft.Text("Sistema", size=12)),
             ],
             rows=rows,
         )
@@ -177,17 +192,7 @@ def main(pg: ft.Page):
 
     varas_selecionadas_iniciais = [
         VarasFederais.VARA_GUAIRA.value,
-        VarasFederais.VARA_FOZ_3.value,
-        VarasFederais.VARA_UMUARAMA_1.value,
-        VarasFederais.VARA_PONTA_GROSSA_1.value,
-        VarasFederais.VARA_MARINGA_3.value,
-        VarasFederais.VARA_CASCAVEL_4.value,
         VarasFederais.VARA_FOZ_5.value,
-        VarasFederais.VARA_LONDRINA_5.value,
-        VarasFederais.VARA_CURITIBA_9.value,
-        VarasFederais.VARA_CURITIBA_13.value,
-        VarasFederais.VARA_CURITIBA_14.value,
-        VarasFederais.VARA_CURITIBA_23.value,
     ]
 
     varas_selecionadas = varas_selecionadas_iniciais.copy()
@@ -228,46 +233,72 @@ def main(pg: ft.Page):
                         ),
                         ft.IconButton(
                             icon=ft.icons.CLOSE,
-                            icon_size=10,
-                            on_click=lambda e: remove_varas(varas),
+                            icon_size=15,
+                            on_click=lambda e, v=varas: remove_varas(v),
+                            tooltip="Remover",
                         )
-                    ]
+                    ],
+                    alignment=ft.MainAxisAlignment.START,
                 ),
-                width=800,
-                height=30,
             )
             for varas in varas_selecionadas
         ]
+        if not selected_varas_list.controls:
+            selected_varas_list.controls.append(
+                ft.Container(
+                    content=ft.Text("Nenhuma vara selecionada", size=12),
+                    padding=0,
+                    margin=0,
+                    width=580,
+                    height=25,
+                )
+            )
         page.update()
 
     def update_dropdown_options():
-        varas_dropdown.options = [
-            ft.dropdown.Option(varas) for varas in varas_federais if varas not in varas_selecionadas
-        ]
+        varas_dropdown.options = [ft.dropdown.Option(varas) for varas in varas_federais if varas not in varas_selecionadas]
         page.update()
 
+    varas_dropdown = ft.Dropdown(
+        options=[ft.dropdown.Option(varas) for varas in varas_federais],
+        on_change=add_varas,
+    )
+
+    selected_varas_list = ft.Column(
+        controls=[
+            ft.Container(
+                content=ft.Text("Nenhuma vara selecionada", size=12),
+                padding=0,
+                margin=0,
+                width=580,
+                height=25,
+            )
+        ]
+    )
+
+    spinner_label = ft.Text("", size=12)
+    
     page.add(
         ft.Column(
             controls=[
                 entry_data_inicio,
                 entry_data_fim,
-                ft.Dropdown(
-                    options=[
-                        ft.dropdown.Option(varas)
-                        for varas in varas_federais
-                        if varas not in varas_selecionadas
+                ft.Row(
+                    controls=[
+                        varas_dropdown,
+                        ft.ElevatedButton(text="Adicionar Vara", on_click=add_varas),
                     ],
-                    label="Selecionar Vara Federal",
-                    on_change=add_varas,
                 ),
-                selected_varas_list := ft.Column(),
+                selected_varas_list,
                 start_button,
-                ft.Text("A consulta está em progresso...", size=15, weight=ft.FontWeight.BOLD),
-                spinner_label := ft.Text("", size=15, weight=ft.FontWeight.BOLD),
-            ]
+                spinner_label,
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
         )
     )
 
     update_varas_selecionadas()
+    update_dropdown_options()
 
-ft.app(target=main)
+if __name__ == "__main__":
+    ft.app(target=main)
