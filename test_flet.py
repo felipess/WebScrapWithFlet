@@ -198,9 +198,36 @@ def main(pg: ft.Page):
 
     varas_federais = [vara.value for vara in VarasFederais]
 
+    # Mapeamento dos valores para labels personalizados
+    varas_labels = {
+        VarasFederais.VARA_GUAIRA.value: "1ª VF Guaira",
+        VarasFederais.VARA_FOZ_3.value: "3 VF de Foz",
+        VarasFederais.VARA_UMUARAMA_1.value: "1ª VF Umuarama",
+        VarasFederais.VARA_PONTA_GROSSA_1.value: "1ª VF Ponta Grossa",
+        VarasFederais.VARA_MARINGA_3.value: "3ª VF Maringá",
+        VarasFederais.VARA_CASCAVEL_4.value: "4ª VF Cascavel",
+        VarasFederais.VARA_FOZ_5.value: "5ª VF Foz",
+        VarasFederais.VARA_LONDRINA_5.value: "5ª VF Londrina",
+        VarasFederais.VARA_CURITIBA_9.value: "9ª VF Curitiba",
+        VarasFederais.VARA_CURITIBA_13.value: "13ª VF Curitiba",
+        VarasFederais.VARA_CURITIBA_14.value: "14ª VF Curitiba",
+        VarasFederais.VARA_CURITIBA_23.value: "23ª VF Curitiba",
+    }
+
+    # Lista de varas selecionadas iniciais com labels personalizados
     varas_selecionadas_iniciais = [
         VarasFederais.VARA_GUAIRA.value,
+        VarasFederais.VARA_FOZ_3.value,
+        VarasFederais.VARA_UMUARAMA_1.value,
+        VarasFederais.VARA_PONTA_GROSSA_1.value,
+        VarasFederais.VARA_MARINGA_3.value,
+        VarasFederais.VARA_CASCAVEL_4.value,
         VarasFederais.VARA_FOZ_5.value,
+        VarasFederais.VARA_LONDRINA_5.value,
+        VarasFederais.VARA_CURITIBA_9.value,
+        VarasFederais.VARA_CURITIBA_13.value,
+        VarasFederais.VARA_CURITIBA_14.value,
+        VarasFederais.VARA_CURITIBA_23.value,
     ]
 
     varas_selecionadas = varas_selecionadas_iniciais.copy()
@@ -223,28 +250,31 @@ def main(pg: ft.Page):
                 content=ft.ResponsiveRow(
                     controls=[
                         ft.Container(
-                            content=ft.Text(varas, size=10),
-                            width=get_text_width(varas, 10),
+                            content=ft.Text(varas_labels.get(varas, varas), size=10),  # Usa o label personalizado se disponível
+                            padding=ft.Padding(left=20, top=0, right=0, bottom=0),  # Espaço à esquerda do texto
+                            width=get_text_width(varas_labels.get(varas, varas), 10) + 40,  # Ajustar largura para incluir espaço
                             height=25,
                             bgcolor=ft.colors.BLUE,
-                            padding=0,
-                            border_radius=25
-                        ),
-                        ft.IconButton(
-                            icon=ft.icons.DELETE_FOREVER,
-                            icon_color=ft.colors.WHITE,
+                            border_radius=25,
                             on_click=lambda e, v=varas: remove_varas(v),
-                            icon_size=12,
+                            tooltip="Remover",
                         ),
                     ],
-                    spacing=5,
+                    spacing=5,  # Espaçamento interno entre os itens no ResponsiveRow
+                    alignment=ft.MainAxisAlignment.START,  # Alinhar os controles horizontalmente
                 ),
-                padding=5,
+                padding=5,  # Padding ao redor do Container principal
                 col={"xs": 6, "sm": 3, "md": 3, "lg": 2, "xl": 2, "xxl": 1},  # Ajustar para diferentes tamanhos de tela
             )
             for varas in varas_selecionadas
         ]
         page.update()
+
+
+
+
+
+
 
     def update_dropdown_options():
         varas_dropdown.options = [
