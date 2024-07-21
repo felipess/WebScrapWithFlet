@@ -25,10 +25,35 @@ entry_data_inicio = ft.TextField(label="Data Início", value="15/07/2024")
 entry_data_fim = ft.TextField(label="Data Fim", value="19/07/2024")
 
 def atualizar_resultados(resultados):
-    global text_area, page
-    if text_area and text_area.content and page:
-        result_text = "\n".join(resultados)
-        text_area.content.value = result_text
+    global page
+    if page:
+        # Criar as linhas da tabela com base nos resultados
+        rows = []
+        for resultado in resultados:
+            # Cada resultado deve ser uma lista de strings para ser exibido na tabela
+            row_cells = [ft.DataCell(ft.Text(cell)) for cell in resultado]
+            rows.append(ft.DataRow(cells=row_cells))
+        
+        # Criar a tabela
+        table = ft.DataTable(
+            columns=[
+                ft.DataColumn(ft.Text("Data/Hora")),
+                ft.DataColumn(ft.Text("Autos")),
+                ft.DataColumn(ft.Text("Classe")),
+                ft.DataColumn(ft.Text("Processo")),
+                ft.DataColumn(ft.Text("Parte")),
+                ft.DataColumn(ft.Text("Status")),
+                ft.DataColumn(ft.Text("Sistema")),
+            ],
+            rows=rows,
+        )
+        
+        # Atualizar a página com a nova tabela
+        if hasattr(page, 'data_table'):
+            page.controls.remove(page.data_table)
+        
+        page.data_table = table
+        page.add(table)
         page.update()
 
 def get_text_width(text, font_size):
@@ -40,9 +65,8 @@ def agendar_proxima_consulta():
     delay = (next_run - datetime.datetime.now()).total_seconds()
     threading.Timer(delay, lambda: executar_consulta(page)).start()
 
-def executar_consulta(pg):
-    global driver, page
-    page = pg
+def executar_consulta(page):
+    global driver
     running_event.set()
     options = webdriver.ChromeOptions()
     options.add_argument("--blink-settings=loadMediaAutomatically=2")
@@ -68,18 +92,16 @@ def executar_consulta(pg):
         campo_data_fim.clear()
         campo_data_fim.send_keys(data_fim)
 
-        titulos = [" Data/Hora: ", " Autos:", "", "", "", "Status", "Sistema"]
+        titulos = ["Data/Hora", "Autos", "Classe", "Processo", "Parte", "Status", "Sistema"]
 
         for idx, vara in enumerate(varas_selecionadas):
-            print(vara)
+            print(f"Consultando: {vara}")
             if termino_event.is_set():
                 break
 
             try:
-                # Atualiza o spinner_label com a vara atual
-                if spinner_label:
-                    spinner_label.value = f"Consultando {vara}..."
-                    page.update()
+                spinner_label.value = f"Consultando {vara}..."
+                page.update()
 
                 vara_federal_div = wait.until(EC.presence_of_element_located((By.ID, "divRowVaraFederal")))
                 dropdown_button = vara_federal_div.find_element(By.CLASS_NAME, "dropdown-toggle")
@@ -94,45 +116,36 @@ def executar_consulta(pg):
                 botao_consultar.click()
 
                 div_infra_area_tabela = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
-                tabela_text = div_infra_area_tabela.text
+                tabela = driver.find_element(By.ID, "tblAudienciasEproc")
+                linhas = tabela.find_elements(By.TAG_NAME, "tr")
 
-                if "Nenhum resultado encontrado." in tabela_text:
-                    resultados.append("")
-                else:
-                    resultados.append(f"Resultados da {vara}\n")
-
-                    tabela = driver.find_element(By.ID, "tblAudienciasEproc")
-                    linhas = tabela.find_elements(By.TAG_NAME, "tr")
-                    encontrou = False
-                    termos = ["custódia", "custodia"]
-
-                    for linha in linhas:
-                        texto_normalizado = linha.text.lower()
-                        if any(termo in texto_normalizado for termo in termos):
-                            conteudo_linha = ""
-                            tds = linha.find_elements(By.TAG_NAME, "td")
-                            for titulo, td in zip(titulos, tds):
-                                if titulo == "Sistema" or titulo == "Status":
-                                    continue
-                                td_html = td.get_attribute('innerHTML')
-                                td_soup = BeautifulSoup(td_html, 'html.parser')
-                                td_text = td_soup.get_text(separator=" ").split("Classe:")[0].strip()
-                                conteudo_linha += f"{titulo} {td_text}\n"
+                for linha in linhas:
+                    texto_normalizado = linha.text.lower()
+                    if any(termo in texto_normalizado for termo in ["custódia", "custodia"]):
+                        tds = linha.find_elements(By.TAG_NAME, "td")
+                        conteudo_linha = []
+                        for td in tds:
+                            td_html = td.get_attribute('innerHTML')
+                            td_soup = BeautifulSoup(td_html, 'html.parser')
+                            td_text = td_soup.get_text(separator=" ").strip()
+                            conteudo_linha.append(td_text)
+                        if len(conteudo_linha) == len(titulos):
                             resultados.append(conteudo_linha)
-                            resultados.append("\n")
-                            encontrou = True
-
-                    if not encontrou:
-                        resultados.pop()
-                        resultados.append("")
+                        else:
+                            resultados.append([""] * len(titulos))
+                if not resultados:
+                    resultados.append([""] * len(titulos))
 
             except Exception as e:
-                resultados.append(f"Ocorreu um erro na consulta da vara {vara}.\n")
+                print(f"Erro ao consultar a vara {vara}: {e}")
+                resultados.append(["Ocorreu um erro na consulta"] * len(titulos))
 
             atualizar_resultados(resultados)
 
     except Exception as e:
-        resultados.append("Ocorreu um erro durante a consulta. Tente novamente mais tarde.")
+        print(f"Erro geral: {e}")
+        resultados.append(["Ocorreu um erro durante a consulta"] * len(titulos))
+        atualizar_resultados(resultados)
         
     finally:
         if spinner_label:
@@ -179,6 +192,11 @@ def main(pg: ft.Page):
 
     varas_selecionadas = varas_selecionadas_iniciais.copy()
 
+    # Definindo datas padrão
+    hoje = datetime.datetime.now()
+    data_inicio_default = hoje.strftime("%d/%m/%Y")
+    data_fim_default = (hoje + datetime.timedelta(days=1)).strftime("%d/%m/%Y")    
+
     def add_varas(e):
         if varas_dropdown.value and varas_dropdown.value not in varas_selecionadas:
             varas_selecionadas.append(varas_dropdown.value)
@@ -191,7 +209,6 @@ def main(pg: ft.Page):
             update_varas_selecionadas()
             update_dropdown_options()
     
-
     def update_varas_selecionadas():
         selected_varas_list.controls = [
             ft.Container(
@@ -211,88 +228,46 @@ def main(pg: ft.Page):
                         ),
                         ft.IconButton(
                             icon=ft.icons.CLOSE,
-                            icon_size=15,
-                            on_click=lambda e, v=varas: remove_varas(v),
-                            tooltip="Remover",
+                            icon_size=10,
+                            on_click=lambda e: remove_varas(varas),
                         )
-                    ],
-                    alignment=ft.MainAxisAlignment.START,
+                    ]
                 ),
+                width=800,
+                height=30,
             )
             for varas in varas_selecionadas
         ]
         page.update()
 
     def update_dropdown_options():
-        available_options = [vara for vara in varas_federais if vara not in varas_selecionadas]
-        varas_dropdown.options = [ft.dropdown.Option(vara) for vara in available_options]
-        page.update()
-
-    available_varas = [vara for vara in varas_federais if vara not in varas_selecionadas]
-    varas_dropdown = ft.Dropdown(
-        options=[ft.dropdown.Option(vara) for vara in available_varas],
-        value=None,
-        width=580,
-        text_style=ft.TextStyle(size=10),
-        height=40
-    )
-
-    add_button = ft.ElevatedButton(
-        text="Adicionar Vara",
-        on_click=add_varas,
-    )
-
-    selected_varas_list = ft.Column(
-        controls=[
-            ft.Row(
-                controls=[
-                    ft.Container(
-                        content=ft.Text(varas, size=10),
-                        width=get_text_width(varas, 10),
-                        height=25,
-                        bgcolor=ft.colors.BLUE,
-                        padding=0,
-                        margin=0,
-                        alignment=ft.alignment.center,
-                        border_radius=25,
-                        ink=True,
-                        on_click=lambda e: print("Clickable with Ink clicked!"),
-                    ),
-                    ft.IconButton(
-                        icon=ft.icons.CLOSE,
-                        icon_size=15,
-                        on_click=lambda e, v=varas: remove_varas(v),
-                        tooltip="Remover",
-                    )
-                ],
-                alignment=ft.MainAxisAlignment.START,
-            )
-            for varas in varas_selecionadas
+        varas_dropdown.options = [
+            ft.dropdown.Option(varas) for varas in varas_federais if varas not in varas_selecionadas
         ]
-    )
-
-    entry_data_inicio = ft.TextField(label="Data Início", value="15/07/2024", width=150)
-    entry_data_fim = ft.TextField(label="Data Fim", value="19/07/2024", width=150)
-    spinner_label = ft.Text("")
-
-    text_area = ft.Container(content=ft.Text("Resultados..."))
-
-    update_varas_selecionadas()
+        page.update()
 
     page.add(
         ft.Column(
-            [
-                ft.Row([entry_data_inicio, entry_data_fim]),
-                ft.Row([varas_dropdown, add_button]),
-                selected_varas_list,
-                ft.Row([start_button]),
-                spinner_label,
-                text_area,
-            ],
-            spacing=10,
-            alignment=ft.MainAxisAlignment.CENTER,
+            controls=[
+                entry_data_inicio,
+                entry_data_fim,
+                ft.Dropdown(
+                    options=[
+                        ft.dropdown.Option(varas)
+                        for varas in varas_federais
+                        if varas not in varas_selecionadas
+                    ],
+                    label="Selecionar Vara Federal",
+                    on_change=add_varas,
+                ),
+                selected_varas_list := ft.Column(),
+                start_button,
+                ft.Text("A consulta está em progresso...", size=15, weight=ft.FontWeight.BOLD),
+                spinner_label := ft.Text("", size=15, weight=ft.FontWeight.BOLD),
+            ]
         )
     )
 
-if __name__ == "__main__":
-    ft.app(target=main)
+    update_varas_selecionadas()
+
+ft.app(target=main)
