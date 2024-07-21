@@ -10,6 +10,7 @@ import datetime
 from VarasFederais import VarasFederais
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
+import pyperclip
 
 # Variável global para o driver Selenium
 driver = None
@@ -41,6 +42,16 @@ entry_data_fim = ft.TextField(
     text_style=ft.TextStyle(size=10)  # Tamanho da fonte ajustado para 10
 )
 
+# Defina a ordem desejada das colunas
+ordem_colunas = [4, 1, 2, 0, 3]  # Ordem original, pode ser ajustada conforme necessário
+
+def copiar_linha(conteudo_linha):
+    """Função para copiar o conteúdo da linha para a área de transferência."""
+    conteudo_ordenado = [conteudo_linha[i] for i in ordem_colunas]  # Organiza o conteúdo conforme a ordem definida
+    texto = ' | '.join(conteudo_ordenado)  # Une o conteúdo da linha em uma string
+    pyperclip.copy(texto)  # Copia o texto para a área de transferência
+    print(f"Conteúdo copiado: {texto}")
+
 def atualizar_resultados(resultados):
     global page
     if page:
@@ -56,6 +67,16 @@ def atualizar_resultados(resultados):
                 ft.DataCell(ft.Text(resultado[3], size=12)),  # Processo
                 ft.DataCell(ft.Text(resultado[4], size=12)),  # Parte
                 # Excluindo Status e Sistema, então não adicione células para essas colunas
+                # Adicionando um botão de copiar à linha
+                ft.DataCell(
+                    ft.IconButton(
+                        icon=ft.icons.CONTENT_COPY,
+                        icon_color=ft.colors.BLUE,
+                        on_click=lambda e, r=resultado: copiar_linha(r),
+                        icon_size=20,
+                        tooltip="Copiar"
+                    )
+                ),
             ]
             rows.append(ft.DataRow(cells=row_cells))
         
@@ -67,6 +88,7 @@ def atualizar_resultados(resultados):
                 ft.DataColumn(ft.Text("Classe", size=12)),
                 ft.DataColumn(ft.Text("Processo", size=12)),
                 ft.DataColumn(ft.Text("Parte", size=12)),
+                ft.DataColumn(ft.Text("Ações", size=12)),  # Coluna para o botão de copiar
                 # Excluindo Status e Sistema das colunas
             ],
             rows=rows,
