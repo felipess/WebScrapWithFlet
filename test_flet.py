@@ -476,8 +476,6 @@ def main(pg: ft.Page):
         )
     )
 
-
-
     # Atualizar a lista de varas selecionadas ao carregar a página
     update_varas_selecionadas()
 
