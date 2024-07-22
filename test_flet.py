@@ -25,7 +25,7 @@ varas_federais = []
 varas_selecionadas = []
 
 # Define o estilo do texto dos itens do dropdown
-text_style = ft.TextStyle(size=10)
+text_style = ft.TextStyle(size=11)
 sizeFontRows = 10
 
 # Definição das datas padrão
@@ -37,14 +37,14 @@ entry_data_inicio = ft.TextField(
     label="Data Início",
     label_style=text_style,
     value=data_inicio_default,
-    width=100,
+    width=102,
     text_style=text_style  # Tamanho da fonte ajustado para 10
 )
 entry_data_fim = ft.TextField(
     label="Data Fim",
     label_style=text_style,
     value=data_fim_default,
-    width=100,
+    width=102,
     text_style=text_style  # Tamanho da fonte ajustado para 10
 )
 
@@ -249,9 +249,15 @@ def main(pg: ft.Page):
     page.window.width = 1000
     page.window.height = 900
     page.window.min_height = 500
-    page.title = "Containers - clickable and not"
+    page.title = "Pesquisa automatizada - Circurscrições da JF do Paraná"
     page.vertical_alignment = ft.MainAxisAlignment.START  # Alinhar ao topo verticalmente
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+
+    # # Usando um ícone SVG personalizado
+    # icon_custom = ft.IconButton(
+    #     icon=ft.icons.Icon(".\icon.png"),  # URL do ícone SVG
+    #     on_click=on_click
+    # )
 
     varas_federais = [vara.value for vara in VarasFederais]
 
@@ -339,7 +345,7 @@ def main(pg: ft.Page):
             "Selecionados",
             size=16,               # Tamanho da fonte para o título
             weight=ft.FontWeight.BOLD,  # Negrito
-            color=ft.colors.WHITE60,  # Cor do texto
+            color=ft.colors.WHITE,  # Cor do texto
             ),
             ft.Container(
                 content=ft.ResponsiveRow(
@@ -366,10 +372,10 @@ def main(pg: ft.Page):
         text_style=text_style,  # Define o estilo do texto para o dropdown
         options=[ft.dropdown.Option(varas) for varas in varas_federais],
         on_change=add_varas,
-        label="Adicionar outra VF para pesquisa",
+        label="Adicionar outras localidades para pesquisa",
         label_style=text_style,
         #hint_text="Selecione",
-        width=545,  # Ajuste a largura conforme necessário
+        width=640,  # Ajuste a largura conforme necessário
         border_radius=5
     )
 
