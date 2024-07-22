@@ -204,6 +204,7 @@ def executar_consulta(page):
             resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se nenhum resultado válido
 
         atualizar_resultados(resultados)
+        
 
     except Exception as e:
         print(f"Erro geral: {e}")
@@ -354,7 +355,8 @@ def main(pg: ft.Page):
         label="Adicionar outra VF para pesquisa",
         label_style=text_style,
         #hint_text="Selecione",
-        width=300,  # Ajuste a largura conforme necessário
+        width=545,  # Ajuste a largura conforme necessário
+        border_radius=5
     )
 
     selected_varas_list = ft.ResponsiveRow(
@@ -390,24 +392,71 @@ def main(pg: ft.Page):
 
     spinner_label = ft.Text("", size=12, color=ft.colors.BLUE_GREY_700)
 
+    
     page.add(
-        ft.Column(
-            controls=[
-                ft.Row(
-                    controls=[
-                        entry_data_inicio,
-                        entry_data_fim,
-                        varas_dropdown
-                    ],
-                    alignment=ft.MainAxisAlignment.START,
-                    spacing=10,  # Ajuste o espaçamento conforme necessário
-                ),
-                selected_varas_list,
-                start_button,
-                spinner_label
-            ]
+        ft.Container(
+            content=ft.Column(
+                controls=[
+                    # Contêiner para o título com padding inferior e alinhamento centralizado
+                    ft.Container(
+                        content=ft.Text(
+                            "Consulta de audiências de custódia",
+                            size=20,
+                            weight="bold"
+                        ),
+                        alignment=ft.Alignment(0, 0.5),  # Centraliza o texto horizontalmente
+                        padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo do título
+                    ),
+                    # Linha com os controles
+                    ft.Container(
+                        content=ft.Row(
+                            controls=[
+                                # Entrada de data de início com borda cinza
+                                ft.Container(
+                                    content=entry_data_inicio,
+                                    #border=ft.border.all(1, ft.colors.GREY_900),  # Borda cinza
+                                ),
+                                # Entrada de data de fim com borda cinza
+                                ft.Container(
+                                    content=entry_data_fim,
+                                    #border=ft.border.all(1, ft.colors.GREY_900),  # Borda cinza
+                                ),
+                                # Dropdown de varas com borda cinza
+                                ft.Container(
+                                    content=varas_dropdown,
+                                    #border=ft.border.all(1, ft.colors.GREY_900),  # Borda cinza
+                                )
+                            ],
+                            alignment=ft.MainAxisAlignment.START,
+                            spacing=10,  # Espaçamento entre os elementos
+                        ),
+                        padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo da linha
+                    ),
+                    # Contêiner para selected_varas_list com padding inferior
+                    ft.Container(
+                        content=selected_varas_list,
+                        padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo de selected_varas_list
+                    ),
+                    # Linha com start_button e spinner_label centralizados
+                    ft.Container(
+                        content=ft.Row(
+                            controls=[
+                                start_button,
+                                spinner_label
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
+                        ),
+                        padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo da linha
+                    )
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                spacing=10  # Espaçamento entre os controles da coluna
+            ),
+            padding=ft.Padding(left=50, top=50, right=50, bottom=50)  # Definindo padding individualmente
         )
     )
+
+
 
     # Atualizar a lista de varas selecionadas ao carregar a página
     update_varas_selecionadas()
