@@ -24,7 +24,7 @@ page = None
 varas_federais = []
 varas_selecionadas = []
 executado = False
-interval = 60
+interval = 600
 
 # Inicialização dos labels com datas e horas atuais
 def get_formatted_datetime():
