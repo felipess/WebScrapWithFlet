@@ -58,23 +58,24 @@ def copiar_linha(conteudo_linha):
     pyperclip.copy(texto)  # Copia o texto para a área de transferência
     print(f"Conteúdo copiado: {texto}")
 
+# Variável global para armazenar a mensagem de nenhum resultado
+mensagem_nenhum_resultado = None
+
 def atualizar_resultados(resultados):
     global page
+    global mensagem_nenhum_resultado
+    
     if page:
-        # Criar as linhas da tabela com base nos resultados
-        rows = []
-        if resultados: 
+        if resultados:
+            # Preparar a tabela com resultados
+            rows = []
             for resultado in resultados:
-                # Cada resultado deve ser uma lista de strings para ser exibido na tabela
-                # Certifique-se de que 'resultado' tem a mesma quantidade de células que as colunas exibidas
                 row_cells = [
                     ft.DataCell(ft.Text(resultado[0], size=sizeFontRows)),  # Data/Hora
                     ft.DataCell(ft.Text(resultado[1], size=sizeFontRows)),  # Autos
                     ft.DataCell(ft.Text(resultado[2], size=sizeFontRows)),  # Classe
                     ft.DataCell(ft.Text(resultado[3], size=sizeFontRows)),  # Processo
                     ft.DataCell(ft.Text(resultado[4], size=sizeFontRows)),  # Parte
-                    # Excluindo Status e Sistema, então não adicione células para essas colunas
-                    # Adicionando um botão de copiar à linha
                     ft.DataCell(
                         ft.IconButton(
                             icon=ft.icons.CONTENT_COPY,
@@ -86,9 +87,18 @@ def atualizar_resultados(resultados):
                     ),
                 ]
                 rows.append(ft.DataRow(cells=row_cells))
-            
-            # Criar a tabela
-            table = ft.DataTable(
+
+            # Remover qualquer mensagem anterior
+            if hasattr(page, 'mensagem_nenhum_resultado'):
+                if page.mensagem_nenhum_resultado in page.controls:
+                    page.controls.remove(page.mensagem_nenhum_resultado)
+
+            # Atualizar a tabela
+            if hasattr(page, 'data_table'):
+                if page.data_table in page.controls:
+                    page.controls.remove(page.data_table)
+
+            page.data_table = ft.DataTable(
                 columns=[
                     ft.DataColumn(ft.Text("Data/Hora", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Autos", size=sizeFontRows)),
@@ -96,32 +106,46 @@ def atualizar_resultados(resultados):
                     ft.DataColumn(ft.Text("Processo", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Parte", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Ações", size=sizeFontRows)),  # Coluna para o botão de copiar
-                    # Excluindo Status e Sistema das colunas
                 ],
                 rows=rows,
-                data_row_min_height=60,  # Altura mínima das linhas de dados
-                data_row_max_height=80,  # Altura máxima das linhas de dados
-                column_spacing=20,       # Espaçamento entre colunas, se necessário
+                data_row_min_height=60,
+                data_row_max_height=80,
+                column_spacing=20,
             )
             
-            # Atualizar a página com a nova tabela
+            mensagem_nenhum_resultado = None
+        else:
+            # Se não houver resultados, definir a mensagem de nenhum resultado
+            mensagem_nenhum_resultado = "Nenhum resultado encontrado."
+
+        # Atualizar a página com base na variável
+        atualizar_pagina()
+
+
+def atualizar_pagina():
+    global page
+    global mensagem_nenhum_resultado
+    
+    if page:
+        # Remover a tabela de resultados, se estiver presente
+        if hasattr(page, 'data_table') and page.data_table in page.controls:
+            page.controls.remove(page.data_table)
+        
+        if mensagem_nenhum_resultado:
+            # Exibir a mensagem de nenhum resultado
+            if not hasattr(page, 'mensagem_nenhum_resultado'):
+                page.mensagem_nenhum_resultado = ft.Text(mensagem_nenhum_resultado, size=sizeFontRows)
+            
+            if page.mensagem_nenhum_resultado not in page.controls:
+                page.add(page.mensagem_nenhum_resultado)
+        else:
+            # Exibir a tabela de resultados
             if hasattr(page, 'data_table'):
-                page.controls.remove(page.data_table)
-            
-            page.data_table = table
-            
-            
-            
-            page.add(
-                ft.Container(
-                    content=ft.Column(
-                    controls=[table]
-                ),
-                padding=ft.Padding(left=50, top=50, right=50, bottom=50)  # Definindo padding individualmente
-                )
-            )
-           
-            page.update()
+                page.add(page.data_table)
+
+        page.update()
+
+
 
 
 def get_text_width(text, font_size):
@@ -132,6 +156,8 @@ def agendar_proxima_consulta():
     next_run = datetime.datetime.now() + datetime.timedelta(minutes=30)
     delay = (next_run - datetime.datetime.now()).total_seconds()
     threading.Timer(delay, lambda: executar_consulta(page)).start()
+
+
 
 def executar_consulta(page):
     global driver
@@ -209,6 +235,7 @@ def executar_consulta(page):
                             conteudo_linha.append(td_text)
                         if not erro_encontrado and len(conteudo_linha) == len(titulos):
                             resultados.append(conteudo_linha)
+                            
 
             except Exception as e:
                 print(f"Erro ao consultar a vara {vara}: {e}")
@@ -457,12 +484,20 @@ def main(pg: ft.Page):
                         content=selected_varas_list,
                         padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo de selected_varas_list
                     ),
+                    ft.Container(
+                        content=ft.Row(
+                            controls=[
+                                spinner_label,
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
+                        ),
+                        padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo da linha
+                    ),
                     # Linha com start_button e spinner_label centralizados
                     ft.Container(
                         content=ft.Row(
                             controls=[
                                 start_button,
-                                spinner_label
                             ],
                             alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
                         ),
