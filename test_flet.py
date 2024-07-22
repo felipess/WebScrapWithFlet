@@ -7,11 +7,15 @@ from bs4 import BeautifulSoup
 import threading
 import time
 import datetime
-import pyperclip
 from VarasFederais import VarasFederais
+from bs4 import BeautifulSoup
+from selenium.webdriver.common.by import By
+import pyperclip
 
-# Variáveis globais
+# Variável global para o driver Selenium
 driver = None
+
+# Definição das variáveis e funções necessárias
 running_event = threading.Event()
 termino_event = threading.Event()
 text_area = None
@@ -20,70 +24,92 @@ page = None
 varas_federais = []
 varas_selecionadas = []
 
-# Data defaults
+# Define o estilo do texto dos itens do dropdown
+text_style = ft.TextStyle(size=10)
+
+# Definição das datas padrão
 hoje = datetime.datetime.now()
 data_inicio_default = hoje.strftime("%d/%m/%Y")
 data_fim_default = (hoje + datetime.timedelta(days=1)).strftime("%d/%m/%Y")
 
 entry_data_inicio = ft.TextField(
     label="Data Início",
+    label_style=text_style,
     value=data_inicio_default,
-    width=200,
-    text_style=ft.TextStyle(size=10)
+    width=100,
+    text_style=text_style  # Tamanho da fonte ajustado para 10
 )
 entry_data_fim = ft.TextField(
     label="Data Fim",
+    label_style=text_style,
     value=data_fim_default,
-    width=200,
-    text_style=ft.TextStyle(size=10)
+    width=100,
+    text_style=text_style  # Tamanho da fonte ajustado para 10
 )
 
-ordem_colunas = [4, 1, 2, 0, 3]
+# Defina a ordem desejada das colunas
+ordem_colunas = [4, 1, 2, 0, 3]  # Ordem original, pode ser ajustada conforme necessário
 
 def copiar_linha(conteudo_linha):
-    conteudo_ordenado = [conteudo_linha[i] for i in ordem_colunas]
-    texto = ' | '.join(conteudo_ordenado)
-    pyperclip.copy(texto)
+    """Função para copiar o conteúdo da linha para a área de transferência."""
+    conteudo_ordenado = [conteudo_linha[i] for i in ordem_colunas]  # Organiza o conteúdo conforme a ordem definida
+    texto = ' | '.join(conteudo_ordenado)  # Une o conteúdo da linha em uma string
+    pyperclip.copy(texto)  # Copia o texto para a área de transferência
     print(f"Conteúdo copiado: {texto}")
 
 def atualizar_resultados(resultados):
     global page
     if page:
+        # Criar as linhas da tabela com base nos resultados
         rows = []
         for resultado in resultados:
-            row_controls = [
-                ft.Container(content=ft.Text(resultado[i], size=12), width=200) for i in range(5)
+            # Cada resultado deve ser uma lista de strings para ser exibido na tabela
+            # Certifique-se de que 'resultado' tem a mesma quantidade de células que as colunas exibidas
+            row_cells = [
+                ft.DataCell(ft.Text(resultado[0], size=12)),  # Data/Hora
+                ft.DataCell(ft.Text(resultado[1], size=12)),  # Autos
+                ft.DataCell(ft.Text(resultado[2], size=12)),  # Classe
+                ft.DataCell(ft.Text(resultado[3], size=12)),  # Processo
+                ft.DataCell(ft.Text(resultado[4], size=12)),  # Parte
+                # Excluindo Status e Sistema, então não adicione células para essas colunas
+                # Adicionando um botão de copiar à linha
+                ft.DataCell(
+                    ft.IconButton(
+                        icon=ft.icons.CONTENT_COPY,
+                        icon_color=ft.colors.BLUE,
+                        on_click=lambda e, r=resultado: copiar_linha(r),
+                        icon_size=20,
+                        tooltip="Copiar"
+                    )
+                ),
             ]
-            row_controls.append(
-                ft.IconButton(
-                    icon=ft.icons.CONTENT_COPY,
-                    icon_color=ft.colors.BLUE,
-                    on_click=lambda e, r=resultado: copiar_linha(r),
-                    icon_size=20,
-                    tooltip="Copiar"
-                )
-            )
-            rows.append(
-                ft.ResponsiveRow(
-                    controls=row_controls,
-                    spacing=5,
-                    alignment=ft.MainAxisAlignment.START
-                )
-            )
-
-        responsive_container = ft.Container(
-            content=ft.Column(controls=rows),
-            width=page.window.width,  # Ajusta a largura ao tamanho da janela
-            padding=5,
-            margin=10
+            rows.append(ft.DataRow(cells=row_cells))
+        
+        # Criar a tabela
+        table = ft.DataTable(
+            columns=[
+                ft.DataColumn(ft.Text("Data/Hora", size=12)),
+                ft.DataColumn(ft.Text("Autos", size=12)),
+                ft.DataColumn(ft.Text("Classe", size=12)),
+                ft.DataColumn(ft.Text("Processo", size=12)),
+                ft.DataColumn(ft.Text("Parte", size=12)),
+                ft.DataColumn(ft.Text("Ações", size=12)),  # Coluna para o botão de copiar
+                # Excluindo Status e Sistema das colunas
+            ],
+            rows=rows,
+            data_row_min_height=60,  # Altura mínima das linhas de dados
+            data_row_max_height=80,  # Altura máxima das linhas de dados
+            column_spacing=20,       # Espaçamento entre colunas, se necessário
         )
-
+        
+        # Atualizar a página com a nova tabela
         if hasattr(page, 'data_table'):
             page.controls.remove(page.data_table)
-
-        page.data_table = responsive_container
-        page.add(responsive_container)
+        
+        page.data_table = table
+        page.add(table)
         page.update()
+
 
 def get_text_width(text, font_size):
     average_char_width = 7
@@ -103,7 +129,7 @@ def executar_consulta(page):
     options.add_argument('--disable-dev-shm-usage')
 
     driver = webdriver.Chrome(options=options)
-    wait = WebDriverWait(driver, 30)
+    wait = WebDriverWait(driver, 30)  # Aumentando o tempo de espera
 
     try:
         resultados = []
@@ -124,6 +150,7 @@ def executar_consulta(page):
         titulos = ["Data/Hora", "Autos", "Classe", "Processo", "Parte", "Status", "Sistema"]
 
         for idx, vara in enumerate(varas_selecionadas):
+            print(f"Consultando: {vara}")
             if termino_event.is_set():
                 break
 
@@ -143,10 +170,13 @@ def executar_consulta(page):
                 botao_consultar = wait.until(EC.element_to_be_clickable((By.ID, "btnConsultar")))
                 botao_consultar.click()
 
+                # Verificar se há a mensagem de "Nenhum resultado encontrado"
                 mensagem_erro = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
                 if "Nenhum resultado encontrado" in mensagem_erro.text:
+                    print(f"Nenhum resultado encontrado para {vara}")
                     continue
 
+                # Esperar até que a tabela esteja presente
                 tabela = wait.until(EC.presence_of_element_located((By.ID, "tblAudienciasEproc")))
                 linhas = tabela.find_elements(By.TAG_NAME, "tr")
 
@@ -159,7 +189,7 @@ def executar_consulta(page):
                         for td in tds:
                             td_html = td.get_attribute('innerHTML')
                             td_soup = BeautifulSoup(td_html, 'html.parser')
-                            td_text = td_soup.get_text(separator=" ").split("Classe:")[0].strip()
+                            td_text = td_soup.get_text(separator=" ").split("Classe:")[0].strip()  # Modificação aqui
                             if "ocorreu um erro" in td_text.lower():
                                 erro_encontrado = True
                                 break
@@ -171,13 +201,13 @@ def executar_consulta(page):
                 print(f"Erro ao consultar a vara {vara}: {e}")
 
         if not resultados:
-            resultados.append([""] * len(titulos))
+            resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se nenhum resultado válido
 
         atualizar_resultados(resultados)
 
     except Exception as e:
         print(f"Erro geral: {e}")
-        resultados.append([""] * len(titulos))
+        resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se houver um erro geral
         atualizar_resultados(resultados)
         
     finally:
@@ -200,14 +230,17 @@ def main(pg: ft.Page):
 
     page = pg
 
-    page.window.width = 640
-    page.window.height = 900
+    page.window.min_width = 900
+    page.window.width = 900
+    page.window.height = 1000
+    page.window.min_height = 500
     page.title = "Containers - clickable and not"
-    page.vertical_alignment = ft.MainAxisAlignment.CENTER
+    page.vertical_alignment = ft.MainAxisAlignment.START  # Alinhar ao topo verticalmente
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
     varas_federais = [vara.value for vara in VarasFederais]
 
+    # Mapeamento dos valores para labels personalizados
     varas_labels = {
         VarasFederais.VARA_GUAIRA.value: "1ª VF Guaira",
         VarasFederais.VARA_FOZ_3.value: "3 VF de Foz",
@@ -223,48 +256,160 @@ def main(pg: ft.Page):
         VarasFederais.VARA_CURITIBA_23.value: "23ª VF Curitiba",
     }
 
+    # Lista de varas selecionadas iniciais com labels personalizados
     varas_selecionadas_iniciais = [
         VarasFederais.VARA_GUAIRA.value,
+        # VarasFederais.VARA_FOZ_3.value,
+        # VarasFederais.VARA_UMUARAMA_1.value,
+        # VarasFederais.VARA_PONTA_GROSSA_1.value,
+        # VarasFederais.VARA_MARINGA_3.value,
+        # VarasFederais.VARA_CASCAVEL_4.value,
+        # VarasFederais.VARA_FOZ_5.value,
+        # VarasFederais.VARA_LONDRINA_5.value,
+        # VarasFederais.VARA_CURITIBA_9.value,
+        # VarasFederais.VARA_CURITIBA_13.value,
+        # VarasFederais.VARA_CURITIBA_14.value,
+        # VarasFederais.VARA_CURITIBA_23.value,
     ]
 
     varas_selecionadas = varas_selecionadas_iniciais.copy()
 
     def add_varas(e):
-        if varas_dropdown.selected:
-            vara = varas_dropdown.selected
-            if vara not in varas_selecionadas:
-                varas_selecionadas.append(vara)
-                page.update()
+        if varas_dropdown.value and varas_dropdown.value not in varas_selecionadas:
+            varas_selecionadas.append(varas_dropdown.value)
+            update_varas_selecionadas()
+            update_dropdown_options()
+            page.update()
 
-    def remove_varas(e):
-        if varas_dropdown.selected:
-            vara = varas_dropdown.selected
-            if vara in varas_selecionadas:
-                varas_selecionadas.remove(vara)
-                page.update()
+
+
+    def remove_varas(varas):
+        if varas in varas_selecionadas:
+            varas_selecionadas.remove(varas)
+            update_varas_selecionadas()
+            update_dropdown_options()
+            page.update()
+
+    
+    def update_varas_selecionadas():
+        # Cria os containers individuais para cada vara selecionada
+        varas_items = [ 
+            ft.Container(
+                content=ft.ResponsiveRow(
+                    controls=[
+                        ft.Container(
+                            content=ft.Text(varas_labels.get(varas, varas), size=10),  # Usa o label personalizado se disponível
+                            padding=ft.Padding(left=20, top=0, right=0, bottom=0),  # Espaço à esquerda do texto
+                            width=get_text_width(varas_labels.get(varas, varas), 10) + 40,  # Ajustar largura para incluir espaço
+                            height=25,
+                            bgcolor=ft.colors.BLUE,
+                            border_radius=25,
+                            on_click=lambda e, v=varas: remove_varas(v),
+                            tooltip="Remover",
+                        ),
+                    ],
+                    spacing=5,  # Espaçamento interno entre os itens no ResponsiveRow
+                    alignment=ft.MainAxisAlignment.START,  # Alinhar os controles horizontalmente
+                ),
+                padding=5,  # Padding ao redor do Container principal
+                col={"xs": 6, "sm": 3, "md": 3, "lg": 2, "xl": 2, "xxl": 1},  # Ajustar para diferentes tamanhos de tela
+            )
+            for varas in varas_selecionadas
+        ]
+        
+
+        # Adiciona um container ao redor de todos os itens
+        selected_varas_list.controls = [
+            ft.Text(
+            "Selecionados",
+            size=16,               # Tamanho da fonte para o título
+            weight=ft.FontWeight.BOLD,  # Negrito
+            color=ft.colors.WHITE60,  # Cor do texto
+            ),
+            ft.Container(
+                content=ft.ResponsiveRow(
+                    controls=varas_items,
+                    spacing=10,  # Espaço entre os containers das varas
+                ),
+                padding=10,  # Padding ao redor do container principal
+                #bgcolor=ft.colors.RED,  # Cor de fundo para o container principal
+                ink=True,
+                border_radius=10,  # Borda arredondada do container principal
+                border=ft.border.all(1, ft.colors.GREY_900)  # Borda do container principal
+            )
+        ]
+        page.update()
+
+    def update_dropdown_options():
+        varas_dropdown.options = [
+            ft.dropdown.Option(varas)
+            for varas in varas_federais if varas not in varas_selecionadas
+        ]
+        page.update()
 
     varas_dropdown = ft.Dropdown(
-        label="Selecionar Vara Federal",
-        options=[ft.dropdown.Option(label, value) for value, label in varas_labels.items()],
-        on_change=add_varas
+        text_style=text_style,  # Define o estilo do texto para o dropdown
+        options=[ft.dropdown.Option(varas) for varas in varas_federais],
+        on_change=add_varas,
+        label="Adicionar outra VF para pesquisa",
+        label_style=text_style,
+        #hint_text="Selecione",
+        width=300,  # Ajuste a largura conforme necessário
     )
+
+    selected_varas_list = ft.ResponsiveRow(
+        controls=[
+            ft.Container(
+                content=ft.ResponsiveRow(
+                    controls=[
+                        ft.Container(
+                            content=ft.Text(varas, size=10),
+                            width=get_text_width(varas, 10),
+                            height=25,
+                            bgcolor=ft.colors.BLUE,
+                            padding=0,
+                            border_radius=25  # Adicionando border radius
+                        ),
+                        ft.IconButton(
+                            icon=ft.icons.DELETE_FOREVER, #or DELETE
+                            icon_color=ft.colors.WHITE,
+                            on_click=lambda e, v=varas: remove_varas(v),
+                            icon_size=12,  # Tamanho reduzido do ícone
+                        ),
+                    ],
+                    spacing=5,
+                    col={"xs": 12, "sm": 6, "md": 4, "lg": 3, "xl": 2, "xxl": 1},  # Ajustar para diferentes tamanhos de tela
+                ),
+                padding=5,
+            )
+            for varas in varas_selecionadas
+        ],
+        spacing=5,
+        run_spacing=10,
+    )
+
+    spinner_label = ft.Text("", size=12, color=ft.colors.BLUE_GREY_700)
 
     page.add(
         ft.Column(
             controls=[
-                entry_data_inicio,
-                entry_data_fim,
-                varas_dropdown,
-                start_button
-            ],
-            alignment=ft.MainAxisAlignment.CENTER,
-            spacing=10
+                ft.Row(
+                    controls=[
+                        entry_data_inicio,
+                        entry_data_fim,
+                        varas_dropdown
+                    ],
+                    alignment=ft.MainAxisAlignment.START,
+                    spacing=10,  # Ajuste o espaçamento conforme necessário
+                ),
+                selected_varas_list,
+                start_button,
+                spinner_label
+            ]
         )
     )
 
-    spinner_label = ft.Text("")
-    text_area = ft.Text()
-    page.add(spinner_label)
-    page.add(text_area)
+    # Atualizar a lista de varas selecionadas ao carregar a página
+    update_varas_selecionadas()
 
 ft.app(target=main)
