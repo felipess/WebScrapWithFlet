@@ -62,53 +62,55 @@ def atualizar_resultados(resultados):
     if page:
         # Criar as linhas da tabela com base nos resultados
         rows = []
-        for resultado in resultados:
-            # Cada resultado deve ser uma lista de strings para ser exibido na tabela
-            # Certifique-se de que 'resultado' tem a mesma quantidade de células que as colunas exibidas
-            row_cells = [
-                ft.DataCell(ft.Text(resultado[0], size=12)),  # Data/Hora
-                ft.DataCell(ft.Text(resultado[1], size=12)),  # Autos
-                ft.DataCell(ft.Text(resultado[2], size=12)),  # Classe
-                ft.DataCell(ft.Text(resultado[3], size=12)),  # Processo
-                ft.DataCell(ft.Text(resultado[4], size=12)),  # Parte
-                # Excluindo Status e Sistema, então não adicione células para essas colunas
-                # Adicionando um botão de copiar à linha
-                ft.DataCell(
-                    ft.IconButton(
-                        icon=ft.icons.CONTENT_COPY,
-                        icon_color=ft.colors.BLUE,
-                        on_click=lambda e, r=resultado: copiar_linha(r),
-                        icon_size=20,
-                        tooltip="Copiar"
-                    )
-                ),
-            ]
-            rows.append(ft.DataRow(cells=row_cells))
+        if resultados: 
+            for resultado in resultados:
+                # Cada resultado deve ser uma lista de strings para ser exibido na tabela
+                # Certifique-se de que 'resultado' tem a mesma quantidade de células que as colunas exibidas
+                row_cells = [
+                    ft.DataCell(ft.Text(resultado[0], size=12)),  # Data/Hora
+                    ft.DataCell(ft.Text(resultado[1], size=12)),  # Autos
+                    ft.DataCell(ft.Text(resultado[2], size=12)),  # Classe
+                    ft.DataCell(ft.Text(resultado[3], size=12)),  # Processo
+                    ft.DataCell(ft.Text(resultado[4], size=12)),  # Parte
+                    # Excluindo Status e Sistema, então não adicione células para essas colunas
+                    # Adicionando um botão de copiar à linha
+                    ft.DataCell(
+                        ft.IconButton(
+                            icon=ft.icons.CONTENT_COPY,
+                            icon_color=ft.colors.BLUE,
+                            on_click=lambda e, r=resultado: copiar_linha(r),
+                            icon_size=20,
+                            tooltip="Copiar"
+                        )
+                    ),
+                ]
+                rows.append(ft.DataRow(cells=row_cells))
+            
+            # Criar a tabela
+            table = ft.DataTable(
+                columns=[
+                    ft.DataColumn(ft.Text("Data/Hora", size=12)),
+                    ft.DataColumn(ft.Text("Autos", size=12)),
+                    ft.DataColumn(ft.Text("Classe", size=12)),
+                    ft.DataColumn(ft.Text("Processo", size=12)),
+                    ft.DataColumn(ft.Text("Parte", size=12)),
+                    ft.DataColumn(ft.Text("Ações", size=12)),  # Coluna para o botão de copiar
+                    # Excluindo Status e Sistema das colunas
+                ],
+                rows=rows,
+                data_row_min_height=60,  # Altura mínima das linhas de dados
+                data_row_max_height=80,  # Altura máxima das linhas de dados
+                column_spacing=20,       # Espaçamento entre colunas, se necessário
+            )
+            
+            # Atualizar a página com a nova tabela
+            if hasattr(page, 'data_table'):
+                page.controls.remove(page.data_table)
+            
+            page.data_table = table
+            page.add(table)
+            page.update()
         
-        # Criar a tabela
-        table = ft.DataTable(
-            columns=[
-                ft.DataColumn(ft.Text("Data/Hora", size=12)),
-                ft.DataColumn(ft.Text("Autos", size=12)),
-                ft.DataColumn(ft.Text("Classe", size=12)),
-                ft.DataColumn(ft.Text("Processo", size=12)),
-                ft.DataColumn(ft.Text("Parte", size=12)),
-                ft.DataColumn(ft.Text("Ações", size=12)),  # Coluna para o botão de copiar
-                # Excluindo Status e Sistema das colunas
-            ],
-            rows=rows,
-            data_row_min_height=60,  # Altura mínima das linhas de dados
-            data_row_max_height=80,  # Altura máxima das linhas de dados
-            column_spacing=20,       # Espaçamento entre colunas, se necessário
-        )
-        
-        # Atualizar a página com a nova tabela
-        if hasattr(page, 'data_table'):
-            page.controls.remove(page.data_table)
-        
-        page.data_table = table
-        page.add(table)
-        page.update()
 
 
 def get_text_width(text, font_size):
@@ -201,7 +203,8 @@ def executar_consulta(page):
                 print(f"Erro ao consultar a vara {vara}: {e}")
 
         if not resultados:
-            resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se nenhum resultado válido
+            resultados = []
+            #resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se nenhum resultado válido
 
         atualizar_resultados(resultados)
         
