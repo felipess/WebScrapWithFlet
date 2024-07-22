@@ -120,7 +120,7 @@ def atualizar_resultados(resultados):
                 if page.data_table in page.controls:
                     page.controls.remove(page.data_table)
 
-            page.data_table = ft.DataTable(
+            data_table = page.data_table = ft.DataTable(
                 columns=[
                     ft.DataColumn(ft.Text("Data/Hora", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Autos", size=sizeFontRows)),
@@ -134,6 +134,17 @@ def atualizar_resultados(resultados):
                 data_row_max_height=80,
                 column_spacing=20,
             )
+
+            # Coloque o DataTable dentro de um Column com rolagem
+            page.data_table_container = ft.Column(
+                controls=[data_table],
+                scroll=ft.ScrollMode.ALWAYS,  # Ativa a rolagem automática
+                height=400,  # Ajuste a altura conforme necessário
+                #width=800,   # Ajuste a largura conforme necessário
+            )
+
+            # Adicione o contêiner à página
+            page.controls.append(page.data_table_container)            
             
             mensagem_nenhum_resultado = None
 
@@ -206,6 +217,8 @@ def executar_consulta(page):
     options.add_argument("--blink-settings=loadMediaAutomatically=2")
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--headless')
+
 
     driver = webdriver.Chrome(options=options)
     wait = WebDriverWait(driver, 30)  # Aumentando o tempo de espera
@@ -317,7 +330,7 @@ def main(pg: ft.Page):
 
     page.window.min_width = 1000
     page.window.width = 1000
-    page.window.height = 900
+    page.window.height = 1000
     page.window.min_height = 500
     page.title = "Pesquisa automatizada - Circurscrições da JF do Paraná"
     page.vertical_alignment = ft.MainAxisAlignment.START  # Alinhar ao topo verticalmente
