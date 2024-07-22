@@ -23,6 +23,25 @@ spinner_label = None
 page = None
 varas_federais = []
 varas_selecionadas = []
+executado = False
+
+# Inicialização dos labels com datas e horas atuais
+def get_formatted_datetime():
+    now = datetime.datetime.now()
+    return now.strftime("%d/%m/%Y %H:%M:%S")
+
+
+if executado:
+    print(executado)
+    ultima_consulta = ft.Text(f"Última consulta: {get_formatted_datetime()}", size=12, color=ft.colors.RED)
+    proxima_consulta = ft.Text(f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=300):%d/%m/%Y %H:%M:%S}", size=12, color=ft.colors.RED)
+else:    
+    ultima_consulta = ft.Text(f"", size=12, color=ft.colors.RED)
+    proxima_consulta = ft.Text(f"", size=12, color=ft.colors.RED)
+
+
+
+temporizadorConsulta = 300
 
 # Define o estilo do texto dos itens do dropdown
 text_style = ft.TextStyle(size=11)
@@ -67,6 +86,11 @@ def atualizar_resultados(resultados):
     
     if page:
         if resultados:
+
+            # Atualizar o texto dos labels
+            ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}"
+            proxima_consulta.value = f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=temporizadorConsulta):%d/%m/%Y %H:%M:%S}"
+
             # Preparar a tabela com resultados
             rows = []
             for resultado in resultados:
@@ -125,6 +149,8 @@ def atualizar_resultados(resultados):
 def atualizar_pagina():
     global page
     global mensagem_nenhum_resultado
+
+
     
     if page:
         # Remover a tabela de resultados, se estiver presente
@@ -143,6 +169,20 @@ def atualizar_pagina():
             if hasattr(page, 'data_table'):
                 page.add(page.data_table)
 
+        # Adicionar os labels de data/hora
+        page.add(
+            ft.Container(
+                content=ft.Row(
+                    controls=[
+                        ultima_consulta,
+                        proxima_consulta
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
+                ),
+                padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo da linha
+            )
+        )
+
         page.update()
 
 
@@ -153,14 +193,13 @@ def get_text_width(text, font_size):
     return len(text) * average_char_width
 
 def agendar_proxima_consulta():
-    next_run = datetime.datetime.now() + datetime.timedelta(minutes=30)
+    next_run = datetime.datetime.now() + datetime.timedelta(seconds=temporizadorConsulta)  # Ajusta para 10 segundos
     delay = (next_run - datetime.datetime.now()).total_seconds()
     threading.Timer(delay, lambda: executar_consulta(page)).start()
 
-
-
 def executar_consulta(page):
     global driver
+    global executado
     running_event.set()
     options = webdriver.ChromeOptions()
     options.add_argument("--blink-settings=loadMediaAutomatically=2")
@@ -235,7 +274,6 @@ def executar_consulta(page):
                             conteudo_linha.append(td_text)
                         if not erro_encontrado and len(conteudo_linha) == len(titulos):
                             resultados.append(conteudo_linha)
-                            
 
             except Exception as e:
                 print(f"Erro ao consultar a vara {vara}: {e}")
@@ -255,6 +293,7 @@ def executar_consulta(page):
     finally:
         if spinner_label:
             spinner_label.value = ""
+            executado = True
             page.update()
         running_event.clear()
         if driver:
@@ -262,13 +301,14 @@ def executar_consulta(page):
         if not termino_event.is_set():
             agendar_proxima_consulta()
 
+
 start_button = ft.ElevatedButton(
     text="Iniciar Consulta",
     on_click=lambda e: executar_consulta(page)
 )
 
 def main(pg: ft.Page):
-    global entry_data_inicio, entry_data_fim, spinner_label, text_area, varas_federais, varas_selecionadas, page
+    global entry_data_inicio, entry_data_fim, spinner_label, text_area, varas_federais, varas_selecionadas, page, ultima_consulta, proxima_consulta
 
     page = pg
 
@@ -280,11 +320,9 @@ def main(pg: ft.Page):
     page.vertical_alignment = ft.MainAxisAlignment.START  # Alinhar ao topo verticalmente
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
-    # # Usando um ícone SVG personalizado
-    # icon_custom = ft.IconButton(
-    #     icon=ft.icons.Icon(".\icon.png"),  # URL do ícone SVG
-    #     on_click=on_click
-    # )
+    # # Adicione os rótulos ao layout da página
+    # page.add(ultima_consulta)
+    # page.add(proxima_consulta)
 
     varas_federais = [vara.value for vara in VarasFederais]
 
@@ -307,17 +345,17 @@ def main(pg: ft.Page):
     # Lista de varas selecionadas iniciais com labels personalizados
     varas_selecionadas_iniciais = [
         VarasFederais.VARA_GUAIRA.value,
-        # VarasFederais.VARA_FOZ_3.value,
-        # VarasFederais.VARA_UMUARAMA_1.value,
-        # VarasFederais.VARA_PONTA_GROSSA_1.value,
-        # VarasFederais.VARA_MARINGA_3.value,
-        # VarasFederais.VARA_CASCAVEL_4.value,
-        # VarasFederais.VARA_FOZ_5.value,
-        # VarasFederais.VARA_LONDRINA_5.value,
-        # VarasFederais.VARA_CURITIBA_9.value,
-        # VarasFederais.VARA_CURITIBA_13.value,
-        # VarasFederais.VARA_CURITIBA_14.value,
-        # VarasFederais.VARA_CURITIBA_23.value,
+        VarasFederais.VARA_FOZ_3.value,
+        VarasFederais.VARA_UMUARAMA_1.value,
+        VarasFederais.VARA_PONTA_GROSSA_1.value,
+        VarasFederais.VARA_MARINGA_3.value,
+        VarasFederais.VARA_CASCAVEL_4.value,
+        VarasFederais.VARA_FOZ_5.value,
+        VarasFederais.VARA_LONDRINA_5.value,
+        VarasFederais.VARA_CURITIBA_9.value,
+        VarasFederais.VARA_CURITIBA_13.value,
+        VarasFederais.VARA_CURITIBA_14.value,
+        VarasFederais.VARA_CURITIBA_23.value,
     ]
 
     varas_selecionadas = varas_selecionadas_iniciais.copy()
@@ -502,13 +540,13 @@ def main(pg: ft.Page):
                             alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
                         ),
                         padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo da linha
-                    )
+                    ),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
                 spacing=10  # Espaçamento entre os controles da coluna
             ),
             padding=ft.Padding(left=50, top=50, right=50, bottom=50)  # Definindo padding individualmente
-        )
+        ),
     )
 
     # Atualizar a lista de varas selecionadas ao carregar a página
