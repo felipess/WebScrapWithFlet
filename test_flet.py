@@ -26,6 +26,7 @@ varas_selecionadas = []
 
 # Define o estilo do texto dos itens do dropdown
 text_style = ft.TextStyle(size=10)
+sizeFontRows = 10
 
 # Definição das datas padrão
 hoje = datetime.datetime.now()
@@ -67,11 +68,11 @@ def atualizar_resultados(resultados):
                 # Cada resultado deve ser uma lista de strings para ser exibido na tabela
                 # Certifique-se de que 'resultado' tem a mesma quantidade de células que as colunas exibidas
                 row_cells = [
-                    ft.DataCell(ft.Text(resultado[0], size=12)),  # Data/Hora
-                    ft.DataCell(ft.Text(resultado[1], size=12)),  # Autos
-                    ft.DataCell(ft.Text(resultado[2], size=12)),  # Classe
-                    ft.DataCell(ft.Text(resultado[3], size=12)),  # Processo
-                    ft.DataCell(ft.Text(resultado[4], size=12)),  # Parte
+                    ft.DataCell(ft.Text(resultado[0], size=sizeFontRows)),  # Data/Hora
+                    ft.DataCell(ft.Text(resultado[1], size=sizeFontRows)),  # Autos
+                    ft.DataCell(ft.Text(resultado[2], size=sizeFontRows)),  # Classe
+                    ft.DataCell(ft.Text(resultado[3], size=sizeFontRows)),  # Processo
+                    ft.DataCell(ft.Text(resultado[4], size=sizeFontRows)),  # Parte
                     # Excluindo Status e Sistema, então não adicione células para essas colunas
                     # Adicionando um botão de copiar à linha
                     ft.DataCell(
@@ -89,12 +90,12 @@ def atualizar_resultados(resultados):
             # Criar a tabela
             table = ft.DataTable(
                 columns=[
-                    ft.DataColumn(ft.Text("Data/Hora", size=12)),
-                    ft.DataColumn(ft.Text("Autos", size=12)),
-                    ft.DataColumn(ft.Text("Classe", size=12)),
-                    ft.DataColumn(ft.Text("Processo", size=12)),
-                    ft.DataColumn(ft.Text("Parte", size=12)),
-                    ft.DataColumn(ft.Text("Ações", size=12)),  # Coluna para o botão de copiar
+                    ft.DataColumn(ft.Text("Data/Hora", size=sizeFontRows)),
+                    ft.DataColumn(ft.Text("Autos", size=sizeFontRows)),
+                    ft.DataColumn(ft.Text("Classe", size=sizeFontRows)),
+                    ft.DataColumn(ft.Text("Processo", size=sizeFontRows)),
+                    ft.DataColumn(ft.Text("Parte", size=sizeFontRows)),
+                    ft.DataColumn(ft.Text("Ações", size=sizeFontRows)),  # Coluna para o botão de copiar
                     # Excluindo Status e Sistema das colunas
                 ],
                 rows=rows,
@@ -108,9 +109,19 @@ def atualizar_resultados(resultados):
                 page.controls.remove(page.data_table)
             
             page.data_table = table
-            page.add(table)
+            
+            
+            
+            page.add(
+                ft.Container(
+                    content=ft.Column(
+                    controls=[table]
+                ),
+                padding=ft.Padding(left=50, top=50, right=50, bottom=50)  # Definindo padding individualmente
+                )
+            )
+           
             page.update()
-        
 
 
 def get_text_width(text, font_size):
@@ -234,9 +245,9 @@ def main(pg: ft.Page):
 
     page = pg
 
-    page.window.min_width = 900
-    page.window.width = 900
-    page.window.height = 1000
+    page.window.min_width = 1000
+    page.window.width = 1000
+    page.window.height = 900
     page.window.min_height = 500
     page.title = "Containers - clickable and not"
     page.vertical_alignment = ft.MainAxisAlignment.START  # Alinhar ao topo verticalmente
