@@ -81,53 +81,62 @@ mensagem_nenhum_resultado = None
 def atualizar_resultados(resultados):
     global page
     global mensagem_nenhum_resultado
-    
+
     if page:
-        if resultados:
+        # Atualizar os labels de data/hora
+        ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}"
+        proxima_consulta.value = f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=interval):%H:%M:%S}"
 
-            # Atualizar o texto dos labels
-            ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}"
-            proxima_consulta.value = f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=interval):%H:%M:%S}"
+        # Preparar a tabela com resultados
+        rows = []
+        for resultado in resultados:
+            row_cells = [
+                ft.DataCell(ft.Text(resultado[0], size=sizeFontRows)),
+                ft.DataCell(ft.Text(resultado[1], size=sizeFontRows)),
+                ft.DataCell(ft.Text(resultado[2], size=sizeFontRows)),
+                ft.DataCell(ft.Text(resultado[3], size=sizeFontRows)),
+                ft.DataCell(ft.Text(resultado[4], size=sizeFontRows)),
+                ft.DataCell(
+                    ft.IconButton(
+                        icon=ft.icons.CONTENT_COPY,
+                        icon_color=ft.colors.BLUE,
+                        on_click=lambda e, r=resultado: copiar_linha(r),
+                        icon_size=20,
+                        tooltip="Copiar"
+                    )
+                ),
+            ]
+            rows.append(ft.DataRow(cells=row_cells))
 
-            # Preparar a tabela com resultados
-            rows = []
-            for resultado in resultados:
-                row_cells = [
-                    ft.DataCell(ft.Text(resultado[0], size=sizeFontRows)),  # Data/Hora
-                    ft.DataCell(ft.Text(resultado[1], size=sizeFontRows)),  # Autos
-                    ft.DataCell(ft.Text(resultado[2], size=sizeFontRows)),  # Classe
-                    ft.DataCell(ft.Text(resultado[3], size=sizeFontRows)),  # Processo
-                    ft.DataCell(ft.Text(resultado[4], size=sizeFontRows)),  # Parte
-                    ft.DataCell(
-                        ft.IconButton(
-                            icon=ft.icons.CONTENT_COPY,
-                            icon_color=ft.colors.BLUE,
-                            on_click=lambda e, r=resultado: copiar_linha(r),
-                            icon_size=20,
-                            tooltip="Copiar"
-                        )
-                    ),
-                ]
-                rows.append(ft.DataRow(cells=row_cells))
+        # Atualizar a página com base na variável
+        atualizar_pagina(rows)
 
-            # Remover qualquer mensagem anterior
-            if hasattr(page, 'mensagem_nenhum_resultado'):
-                if page.mensagem_nenhum_resultado in page.controls:
-                    page.controls.remove(page.mensagem_nenhum_resultado)
 
-            # Atualizar a tabela
-            if hasattr(page, 'data_table'):
-                if page.data_table in page.controls:
-                    page.controls.remove(page.data_table)
 
-            data_table = page.data_table = ft.DataTable(
+def atualizar_pagina(rows):
+    global page
+    global mensagem_nenhum_resultado
+
+    if page:
+        # Remover a tabela de resultados, se estiver presente
+        if hasattr(page, 'data_table_container') and page.data_table_container in page.controls:
+            page.controls.remove(page.data_table_container)
+        
+        if mensagem_nenhum_resultado:
+            if not hasattr(page, 'mensagem_nenhum_resultado'):
+                page.mensagem_nenhum_resultado = ft.Text(mensagem_nenhum_resultado, size=sizeFontRows)
+            
+            if page.mensagem_nenhum_resultado not in page.controls:
+                page.controls.append(page.mensagem_nenhum_resultado)
+        else:
+            data_table = ft.DataTable(
                 columns=[
                     ft.DataColumn(ft.Text("Data/Hora", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Autos", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Classe", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Processo", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Parte", size=sizeFontRows)),
-                    ft.DataColumn(ft.Text("Ações", size=sizeFontRows)),  # Coluna para o botão de copiar
+                    ft.DataColumn(ft.Text("Ações", size=sizeFontRows)),
                 ],
                 rows=rows,
                 data_row_min_height=60,
@@ -136,64 +145,30 @@ def atualizar_resultados(resultados):
             )
 
             # Coloque o DataTable dentro de um Column com rolagem
-            page.data_table_container = ft.Column(
+            data_table_container = ft.Column(
                 controls=[data_table],
-                scroll=ft.ScrollMode.ALWAYS,  # Ativa a rolagem automática
-                height=400,  # Ajuste a altura conforme necessário
-                #width=800,   # Ajuste a largura conforme necessário
+                scroll=ft.ScrollMode.ALWAYS,
+                height=400,
             )
 
+            page.data_table_container = data_table_container
+
             # Adicione o contêiner à página
-            page.controls.append(page.data_table_container)            
-            
-            mensagem_nenhum_resultado = None
-
-        else:
-            # Se não houver resultados, definir a mensagem de nenhum resultado
-            mensagem_nenhum_resultado = "Nenhum resultado encontrado."
-
-            # Atualizar a página com base na variável
-        atualizar_pagina()
-
-
-def atualizar_pagina():
-    global page
-    global mensagem_nenhum_resultado
-
-
-    
-    if page:
-        page.update()
-
-        # Remover a tabela de resultados, se estiver presente
-        if hasattr(page, 'data_table') and page.data_table in page.controls:
-            page.controls.remove(page.data_table)
-        
-        if mensagem_nenhum_resultado:
-            # Exibir a mensagem de nenhum resultado
-            if not hasattr(page, 'mensagem_nenhum_resultado'):
-                page.mensagem_nenhum_resultado = ft.Text(mensagem_nenhum_resultado, size=sizeFontRows)
-            
-            if page.mensagem_nenhum_resultado not in page.controls:
-                page.add(page.mensagem_nenhum_resultado)
-        else:
-            # Exibir a tabela de resultados
-            if hasattr(page, 'data_table'):
-                page.add(page.data_table)
+            page.controls.append(page.data_table_container)
 
         # Adicionar os labels de data/hora
-        # if not hasattr(page, 'data_labels'):
-        #     page.data_labels = ft.Container(
-        #         content=ft.Row(
-        #             controls=[
-        #                 ultima_consulta,
-        #                 proxima_consulta
-        #             ],
-        #             alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
-        #         ),
-        #         padding=ft.Padding(20, 0, 0, 0)  # Adiciona espaço abaixo da linha
-        #     )
-        #     page.controls.append(page.data_labels)
+        if not hasattr(page, 'data_labels'):
+            page.data_labels = ft.Container(
+                content=ft.Row(
+                    controls=[
+                        ultima_consulta,
+                        proxima_consulta
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER
+                ),
+                padding=ft.Padding(20, 0, 0, 0)
+            )
+            page.controls.append(page.data_labels)
 
         page.update()
 
@@ -402,11 +377,11 @@ def main(pg: ft.Page):
                     controls=[
                         ft.Container(
                             content=ft.Text(varas_labels.get(varas, varas), size=10),  # Usa o label personalizado se disponível
-                            padding=ft.Padding(left=20, top=5, right=0, bottom=0),  # Espaço à esquerda do texto
+                            padding=ft.Padding(left=20, top=2, right=0, bottom=0),  # Espaço à esquerda do texto
                             width=get_text_width(varas_labels.get(varas, varas), 10) + 40,  # Ajustar largura para incluir espaço
                             height=25,
                             bgcolor=ft.colors.BLUE,
-                            border_radius=15,
+                            border_radius=5,
                             on_click=lambda e, v=varas: remove_varas(v),
                             tooltip="Remover",
                         ),
