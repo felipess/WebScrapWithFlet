@@ -24,24 +24,22 @@ page = None
 varas_federais = []
 varas_selecionadas = []
 executado = False
+interval = 15
 
 # Inicialização dos labels com datas e horas atuais
 def get_formatted_datetime():
     now = datetime.datetime.now()
-    return now.strftime("%d/%m/%Y %H:%M:%S")
+    #return now.strftime("%d/%m/%Y %H:%M:%S")
+    return now.strftime("%H:%M:%S")
 
 
-if executado:
-    print(executado)
-    ultima_consulta = ft.Text(f"Última consulta: {get_formatted_datetime()}", size=12, color=ft.colors.RED)
-    proxima_consulta = ft.Text(f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=300):%d/%m/%Y %H:%M:%S}", size=12, color=ft.colors.RED)
-else:    
-    ultima_consulta = ft.Text(f"", size=12, color=ft.colors.RED)
-    proxima_consulta = ft.Text(f"", size=12, color=ft.colors.RED)
-
-
-
-temporizadorConsulta = 300
+# if executado:
+#     print(executado)
+#     ultima_consulta = ft.Text(f"Última consulta: {get_formatted_datetime()}", size=12, color=ft.colors.RED)
+#     proxima_consulta = ft.Text(f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=interval):%d/%m/%Y %H:%M:%S}", size=12, color=ft.colors.RED)
+# else:    
+ultima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
+proxima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
 
 # Define o estilo do texto dos itens do dropdown
 text_style = ft.TextStyle(size=11)
@@ -89,7 +87,7 @@ def atualizar_resultados(resultados):
 
             # Atualizar o texto dos labels
             ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}"
-            proxima_consulta.value = f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=temporizadorConsulta):%d/%m/%Y %H:%M:%S}"
+            proxima_consulta.value = f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=interval):%H:%M:%S}"
 
             # Preparar a tabela com resultados
             rows = []
@@ -138,11 +136,12 @@ def atualizar_resultados(resultados):
             )
             
             mensagem_nenhum_resultado = None
+
         else:
             # Se não houver resultados, definir a mensagem de nenhum resultado
             mensagem_nenhum_resultado = "Nenhum resultado encontrado."
 
-        # Atualizar a página com base na variável
+            # Atualizar a página com base na variável
         atualizar_pagina()
 
 
@@ -153,6 +152,8 @@ def atualizar_pagina():
 
     
     if page:
+        page.update()
+
         # Remover a tabela de resultados, se estiver presente
         if hasattr(page, 'data_table') and page.data_table in page.controls:
             page.controls.remove(page.data_table)
@@ -170,18 +171,18 @@ def atualizar_pagina():
                 page.add(page.data_table)
 
         # Adicionar os labels de data/hora
-        page.add(
-            ft.Container(
-                content=ft.Row(
-                    controls=[
-                        ultima_consulta,
-                        proxima_consulta
-                    ],
-                    alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
-                ),
-                padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo da linha
-            )
-        )
+        # if not hasattr(page, 'data_labels'):
+        #     page.data_labels = ft.Container(
+        #         content=ft.Row(
+        #             controls=[
+        #                 ultima_consulta,
+        #                 proxima_consulta
+        #             ],
+        #             alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
+        #         ),
+        #         padding=ft.Padding(20, 0, 0, 0)  # Adiciona espaço abaixo da linha
+        #     )
+        #     page.controls.append(page.data_labels)
 
         page.update()
 
@@ -193,7 +194,7 @@ def get_text_width(text, font_size):
     return len(text) * average_char_width
 
 def agendar_proxima_consulta():
-    next_run = datetime.datetime.now() + datetime.timedelta(seconds=temporizadorConsulta)  # Ajusta para 10 segundos
+    next_run = datetime.datetime.now() + datetime.timedelta(seconds=interval)  # Ajusta para 10 segundos
     delay = (next_run - datetime.datetime.now()).total_seconds()
     threading.Timer(delay, lambda: executar_consulta(page)).start()
 
@@ -475,9 +476,10 @@ def main(pg: ft.Page):
         run_spacing=10,
     )
 
-    spinner_label = ft.Text("", size=12, color=ft.colors.BLUE_GREY_700)
+    spinner_label = ft.Text("", size=10, color=ft.colors.BLUE_500)
 
-    
+    page.update()
+
     page.add(
         ft.Container(
             content=ft.Column(
@@ -515,21 +517,32 @@ def main(pg: ft.Page):
                             alignment=ft.MainAxisAlignment.START,
                             spacing=10,  # Espaçamento entre os elementos
                         ),
-                        padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo da linha
+                        padding=ft.Padding(0, 0, 0, 0)  # Adiciona espaço abaixo da linha
                     ),
                     # Contêiner para selected_varas_list com padding inferior
                     ft.Container(
                         content=selected_varas_list,
-                        padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo de selected_varas_list
+                        padding=ft.Padding(0, 0, 0, 0)  # Adiciona espaço abaixo de selected_varas_list
                     ),
                     ft.Container(
                         content=ft.Row(
                             controls=[
-                                spinner_label,
+                                spinner_label                                
                             ],
                             alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
                         ),
-                        padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo da linha
+                        padding=ft.Padding(0, 0, 0, 0)  # Adiciona espaço abaixo da linha
+                    ),
+                    ft.Container(
+                        content=ft.Row(
+                            controls=[
+                                #ft.Divider(height=30, thickness=12),
+                                ultima_consulta,
+                                proxima_consulta,
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
+                        ),
+                        padding=ft.Padding(0, 0, 0, 0)  # Adiciona espaço abaixo da linha
                     ),
                     # Linha com start_button e spinner_label centralizados
                     ft.Container(
@@ -539,13 +552,13 @@ def main(pg: ft.Page):
                             ],
                             alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
                         ),
-                        padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo da linha
+                        padding=ft.Padding(0, 0, 0, 0)  # Adiciona espaço abaixo da linha
                     ),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
                 spacing=10  # Espaçamento entre os controles da coluna
             ),
-            padding=ft.Padding(left=50, top=50, right=50, bottom=50)  # Definindo padding individualmente
+            padding=ft.Padding(left=50, top=50, right=50, bottom=50)  # Definindo padding do Container Janela geral
         ),
     )
 
