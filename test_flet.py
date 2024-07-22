@@ -156,25 +156,6 @@ def atualizar_pagina(rows):
             # Adicione o contêiner à página
             page.controls.append(page.data_table_container)
 
-        # # Verifique se os labels já foram adicionados
-        # if not hasattr(page, 'data_labels'):
-        #     # Adicionar os labels de data/hora
-        #     page.data_labels = ft.Container(
-        #         content=ft.Row(
-        #             controls=[
-        #                 ultima_consulta,
-        #                 proxima_consulta
-        #             ],
-        #             alignment=ft.MainAxisAlignment.CENTER
-        #         ),
-        #         padding=ft.Padding(20, 0, 0, 0)
-        #     )
-        #     page.controls.append(page.data_labels)
-        # else:
-        #     # Atualizar os valores dos labels se já estiverem na página
-        #     ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}"
-        #     proxima_consulta.value = f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=interval):%H:%M:%S}"
-
         page.update()
 
 
