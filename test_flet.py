@@ -24,7 +24,7 @@ page = None
 varas_federais = []
 varas_selecionadas = []
 executado = False
-interval = 15
+interval = 60
 
 # Inicialização dos labels com datas e horas atuais
 def get_formatted_datetime():
@@ -305,6 +305,8 @@ def executar_consulta(page):
 
 start_button = ft.ElevatedButton(
     text="Iniciar Consulta",
+    icon=ft.icons.PLAY_ARROW,
+    #bgcolor=ft.colors.BLUE_500,
     on_click=lambda e: executar_consulta(page)
 )
 
