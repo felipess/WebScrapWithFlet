@@ -218,6 +218,7 @@ def executar_consulta(page):
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--headless')
+    options.add_argument("--disable-gpu")  # Desabilita o uso da GPU
 
 
     driver = webdriver.Chrome(options=options)
@@ -401,11 +402,11 @@ def main(pg: ft.Page):
                     controls=[
                         ft.Container(
                             content=ft.Text(varas_labels.get(varas, varas), size=10),  # Usa o label personalizado se disponível
-                            padding=ft.Padding(left=20, top=0, right=0, bottom=0),  # Espaço à esquerda do texto
+                            padding=ft.Padding(left=20, top=5, right=0, bottom=0),  # Espaço à esquerda do texto
                             width=get_text_width(varas_labels.get(varas, varas), 10) + 40,  # Ajustar largura para incluir espaço
                             height=25,
                             bgcolor=ft.colors.BLUE,
-                            border_radius=25,
+                            border_radius=15,
                             on_click=lambda e, v=varas: remove_varas(v),
                             tooltip="Remover",
                         ),
