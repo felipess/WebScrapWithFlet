@@ -40,6 +40,8 @@ def get_formatted_datetime():
 # else:    
 ultima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
 proxima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
+# Label DEV
+label_dev = ft.Text("feliped@mpf.mp.br")
 
 # Define o estilo do texto dos itens do dropdown
 text_style = ft.TextStyle(size=11)
@@ -286,7 +288,7 @@ start_button = ft.ElevatedButton(
 )
 
 def main(pg: ft.Page):
-    global entry_data_inicio, entry_data_fim, spinner_label, text_area, varas_federais, varas_selecionadas, page, ultima_consulta, proxima_consulta
+    global entry_data_inicio, entry_data_fim, spinner_label, text_area, varas_federais, varas_selecionadas, page, ultima_consulta, proxima_consulta, selected_varas_list
 
     page = pg
 
@@ -295,12 +297,8 @@ def main(pg: ft.Page):
     page.window.height = 1000
     page.window.min_height = 500
     page.title = "Pesquisa automatizada - Circurscrições da JF do Paraná"
-    page.vertical_alignment = ft.MainAxisAlignment.START  # Alinhar ao topo verticalmente
+    page.vertical_alignment = ft.MainAxisAlignment.START
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-
-    # # Adicione os rótulos ao layout da página
-    # page.add(ultima_consulta)
-    # page.add(proxima_consulta)
 
     varas_federais = [vara.value for vara in VarasFederais]
 
@@ -320,7 +318,6 @@ def main(pg: ft.Page):
         VarasFederais.VARA_CURITIBA_23.value: "23ª VF Curitiba",
     }
 
-    # Lista de varas selecionadas iniciais com labels personalizados
     varas_selecionadas_iniciais = [
         VarasFederais.VARA_GUAIRA.value,
         VarasFederais.VARA_FOZ_3.value,
@@ -345,8 +342,6 @@ def main(pg: ft.Page):
             update_dropdown_options()
             page.update()
 
-
-
     def remove_varas(varas):
         if varas in varas_selecionadas:
             varas_selecionadas.remove(varas)
@@ -354,10 +349,8 @@ def main(pg: ft.Page):
             update_dropdown_options()
             page.update()
 
-    
     def update_varas_selecionadas():
-        # Cria os containers individuais para cada vara selecionada
-        varas_items = [ 
+        varas_items = [
             ft.Container(
                 content=ft.ResponsiveRow(
                     controls=[
@@ -372,36 +365,34 @@ def main(pg: ft.Page):
                             tooltip="Remover",
                         ),
                     ],
-                    spacing=5,  # Espaçamento interno entre os itens no ResponsiveRow
-                    alignment=ft.MainAxisAlignment.START,  # Alinhar os controles horizontalmente
+                    spacing=5,
+                    alignment=ft.MainAxisAlignment.START,
                 ),
-                padding=5,  # Padding ao redor do Container principal
-                col={"xs": 6, "sm": 3, "md": 3, "lg": 2, "xl": 2, "xxl": 1},  # Ajustar para diferentes tamanhos de tela
+                padding=5,
+                col={"xs": 6, "sm": 3, "md": 3, "lg": 2, "xl": 2, "xxl": 1},
             )
             for varas in varas_selecionadas
         ]
-        
 
-        # Adiciona um container ao redor de todos os itens
         selected_varas_list.controls = [
             ft.Text(
-            "Selecionados",
-            size=16,               # Tamanho da fonte para o título
-            weight=ft.FontWeight.BOLD,  # Negrito
-            color=ft.colors.WHITE,  # Cor do texto
+                "Selecionados",
+                size=16,
+                weight=ft.FontWeight.BOLD,
+                color=ft.colors.WHITE,
             ),
             ft.Container(
                 content=ft.ResponsiveRow(
                     controls=varas_items,
-                    spacing=10,  # Espaço entre os containers das varas
+                    spacing=10,
                 ),
-                padding=10,  # Padding ao redor do container principal
-                #bgcolor=ft.colors.RED,  # Cor de fundo para o container principal
+                padding=10,
                 ink=True,
-                border_radius=10,  # Borda arredondada do container principal
-                border=ft.border.all(1, ft.colors.GREY_900)  # Borda do container principal
+                border_radius=10,
+                border=ft.border.all(1, ft.colors.GREY_900)
             )
         ]
+        # Atualiza a página para refletir as mudanças
         page.update()
 
     def update_dropdown_options():
@@ -412,38 +403,34 @@ def main(pg: ft.Page):
         page.update()
 
     varas_dropdown = ft.Dropdown(
-        text_style=text_style,  # Define o estilo do texto para o dropdown
+        text_style=text_style,
         options=[ft.dropdown.Option(varas) for varas in varas_federais],
         on_change=add_varas,
         label="Adicionar outras localidades para pesquisa",
         label_style=text_style,
-        #hint_text="Selecione",
-        width=640,  # Ajuste a largura conforme necessário
+        width=640,
         border_radius=5
     )
 
+    # Initialize selected_varas_list
     selected_varas_list = ft.ResponsiveRow(
         controls=[
             ft.Container(
                 content=ft.ResponsiveRow(
                     controls=[
                         ft.Container(
-                            content=ft.Text(varas, size=10),
-                            width=get_text_width(varas, 10),
+                            content=ft.Text(varas_labels.get(varas, varas), size=10),
+                            padding=ft.Padding(left=20, top=2, right=0, bottom=0),
+                            width=get_text_width(varas_labels.get(varas, varas), 10) + 40,
                             height=25,
                             bgcolor=ft.colors.BLUE,
-                            padding=0,
-                            border_radius=25  # Adicionando border radius
-                        ),
-                        ft.IconButton(
-                            icon=ft.icons.DELETE_FOREVER, #or DELETE
-                            icon_color=ft.colors.WHITE,
+                            border_radius=5,
                             on_click=lambda e, v=varas: remove_varas(v),
-                            icon_size=12,  # Tamanho reduzido do ícone
+                            tooltip="Remover",
                         ),
                     ],
                     spacing=5,
-                    col={"xs": 12, "sm": 6, "md": 4, "lg": 3, "xl": 2, "xxl": 1},  # Ajustar para diferentes tamanhos de tela
+                    alignment=ft.MainAxisAlignment.START,
                 ),
                 padding=5,
             )
@@ -454,92 +441,78 @@ def main(pg: ft.Page):
     )
 
     spinner_label = ft.Text("", size=10, color=ft.colors.BLUE_500)
-
     page.update()
 
+
+    # Adiciona todos os elementos em uma única chamada
     page.add(
         ft.Container(
+            padding=ft.Padding(50, 50, 50, 50),  # Padding de 50 pixels em todos os lados
             content=ft.Column(
                 controls=[
-                    # Contêiner para o título com padding inferior e alinhamento centralizado
                     ft.Container(
                         content=ft.Text(
                             "Consulta de audiências de custódia",
                             size=20,
                             weight="bold"
                         ),
-                        alignment=ft.Alignment(0, 0.5),  # Centraliza o texto horizontalmente
-                        padding=ft.Padding(0, 0, 0, 20)  # Adiciona espaço abaixo do título
+                        alignment=ft.Alignment(0, 0.5),
+                        padding=ft.Padding(0, 0, 0, 20)
                     ),
-                    # Linha com os controles
                     ft.Container(
                         content=ft.Row(
                             controls=[
-                                # Entrada de data de início com borda cinza
                                 ft.Container(
                                     content=entry_data_inicio,
-                                    #border=ft.border.all(1, ft.colors.GREY_900),  # Borda cinza
                                 ),
-                                # Entrada de data de fim com borda cinza
                                 ft.Container(
                                     content=entry_data_fim,
-                                    #border=ft.border.all(1, ft.colors.GREY_900),  # Borda cinza
                                 ),
-                                # Dropdown de varas com borda cinza
                                 ft.Container(
                                     content=varas_dropdown,
-                                    #border=ft.border.all(1, ft.colors.GREY_900),  # Borda cinza
                                 )
                             ],
                             alignment=ft.MainAxisAlignment.START,
-                            spacing=10,  # Espaçamento entre os elementos
+                            spacing=10,
                         ),
-                        padding=ft.Padding(0, 0, 0, 0)  # Adiciona espaço abaixo da linha
+                        padding=ft.Padding(0, 0, 0, 0)
                     ),
-                    # Contêiner para selected_varas_list com padding inferior
                     ft.Container(
                         content=selected_varas_list,
-                        padding=ft.Padding(0, 0, 0, 0)  # Adiciona espaço abaixo de selected_varas_list
+                        padding=ft.Padding(0, 0, 0, 0)
                     ),
                     ft.Container(
                         content=ft.Row(
-                            controls=[
-                                spinner_label                                
-                            ],
-                            alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
+                            controls=[spinner_label],
+                            alignment=ft.MainAxisAlignment.CENTER
                         ),
-                        padding=ft.Padding(0, 0, 0, 0)  # Adiciona espaço abaixo da linha
+                        padding=ft.Padding(0, 0, 0, 0)
                     ),
                     ft.Container(
                         content=ft.Row(
                             controls=[
-                                #ft.Divider(height=30, thickness=12),
                                 ultima_consulta,
                                 proxima_consulta,
                             ],
-                            alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
+                            alignment=ft.MainAxisAlignment.CENTER
                         ),
-                        padding=ft.Padding(0, 0, 0, 0)  # Adiciona espaço abaixo da linha
+                        padding=ft.Padding(0, 0, 0, 0)
                     ),
-                    # Linha com start_button e spinner_label centralizados
                     ft.Container(
                         content=ft.Row(
-                            controls=[
-                                start_button,
-                            ],
-                            alignment=ft.MainAxisAlignment.CENTER  # Centraliza os botões
+                            controls=[start_button],
+                            alignment=ft.MainAxisAlignment.CENTER
                         ),
-                        padding=ft.Padding(0, 0, 0, 0)  # Adiciona espaço abaixo da linha
+                        padding=ft.Padding(0, 0, 0, 20)  # Ajuste o padding conforme necessário
                     ),
-                ],
-                alignment=ft.MainAxisAlignment.CENTER,
-                spacing=10  # Espaçamento entre os controles da coluna
-            ),
-            padding=ft.Padding(left=50, top=50, right=50, bottom=50)  # Definindo padding do Container Janela geral
-        ),
+                ]
+            )
+        )
     )
 
-    # Atualizar a lista de varas selecionadas ao carregar a página
+    page.update()
     update_varas_selecionadas()
+
+
 
 ft.app(target=main)
