@@ -505,6 +505,15 @@ def main(pg: ft.Page):
                         ),
                         padding=ft.Padding(0, 0, 0, 20)  # Ajuste o padding conforme necessário
                     ),
+                    ft.Container(
+                        content=ft.Text(
+                            label_dev,
+                            size=20,
+                            weight="bold"
+                        ),
+                        alignment=ft.Alignment(0, 0.5),
+                        padding=ft.Padding(0, 0, 0, 20)
+                    ),
                 ]
             )
         )
