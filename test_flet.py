@@ -120,6 +120,7 @@ def atualizar_pagina(rows):
     global mensagem_nenhum_resultado
 
     if page:
+        print(mensagem_nenhum_resultado)
         # Remover a tabela de resultados, se estiver presente
         if hasattr(page, 'data_table_container') and page.data_table_container in page.controls:
             page.controls.remove(page.data_table_container)
@@ -178,6 +179,7 @@ def agendar_proxima_consulta():
 def executar_consulta(page):
     global driver
     global executado
+    global mensagem_nenhum_resultado
     running_event.set()
     options = webdriver.ChromeOptions()
     options.add_argument("--blink-settings=loadMediaAutomatically=2")
@@ -261,6 +263,7 @@ def executar_consulta(page):
 
         if not resultados:
             resultados = []
+            mensagem_nenhum_resultado = "Nenhum resultado encontrado."
             #resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se nenhum resultado válido
 
         atualizar_resultados(resultados)
