@@ -32,6 +32,37 @@ def get_formatted_datetime():
     #return now.strftime("%d/%m/%Y %H:%M:%S")
     return now.strftime("%H:%M:%S")
 
+def atualizar_rodape():
+    global page
+    global label_dev
+
+
+    #altura_total = page.height
+    #altura_conteudo = calcular_altura_conteudo()  # Função que calcula a altura do conteúdo acima do rodapé
+
+    rodape = ft.Container(
+        content=ft.Text(
+            label_dev.value,
+            size=10,
+            color=ft.colors.GREY_600,
+        ),
+        padding=ft.Padding(50, 5, 50, 5),  # Ajuste o padding conforme necessário
+        #bgcolor=ft.colors.GREY_100,
+        # border_radius=10,
+        # border=ft.border.all(1, ft.colors.GREY_900),
+        ink=True,
+
+    )
+
+    if hasattr(page, 'rodape'):
+        if page.rodape in page.controls:
+            page.controls.remove(page.rodape)
+    
+    page.rodape = rodape
+    page.controls.append(page.rodape)
+    page.update()
+
+
 
 # if executado:
 #     print(executado)
@@ -41,7 +72,7 @@ def get_formatted_datetime():
 ultima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
 proxima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
 # Label DEV
-label_dev = ft.Text("feliped@mpf.mp.br")
+label_dev = ft.Text("Aviso:\nUtilize apenas como recurso auxiliar.\nEste aplicativo consulta a pauta de audiências do site da JFPR.\nCaso não tenha sido atualizada pelo servidor da respectiva circunscrição ou não tenha sido lançada com os termos 'custódia', não encontrará resultado.")
 
 # Define o estilo do texto dos itens do dropdown
 text_style = ft.TextStyle(size=11)
@@ -83,7 +114,6 @@ mensagem_nenhum_resultado = None
 def atualizar_resultados(resultados):
     global page
     global mensagem_nenhum_resultado
-
     if page:
         # Atualizar os labels de data/hora
         ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}"
@@ -121,17 +151,26 @@ def atualizar_pagina(rows):
 
     if page:
         print(mensagem_nenhum_resultado)
-        # Remover a tabela de resultados, se estiver presente
+        
+        # Remover a mensagem de "Nenhum resultado encontrado" se estiver presente
+        if hasattr(page, 'mensagem_nenhum_resultado'):
+            if page.mensagem_nenhum_resultado in page.controls:
+                page.controls.remove(page.mensagem_nenhum_resultado)
+                del page.mensagem_nenhum_resultado        
+        
+        #Remover a tabela de resultados, se estiver presente
         if hasattr(page, 'data_table_container') and page.data_table_container in page.controls:
             page.controls.remove(page.data_table_container)
+
         
-        if mensagem_nenhum_resultado:
+        if mensagem_nenhum_resultado != None:
             if not hasattr(page, 'mensagem_nenhum_resultado'):
                 page.mensagem_nenhum_resultado = ft.Text(mensagem_nenhum_resultado, size=sizeFontRows)
             
             if page.mensagem_nenhum_resultado not in page.controls:
                 page.controls.append(page.mensagem_nenhum_resultado)
         else:
+            print(mensagem_nenhum_resultado)
             data_table = ft.DataTable(
                 columns=[
                     ft.DataColumn(ft.Text("Data/Hora", size=sizeFontRows)),
@@ -154,13 +193,15 @@ def atualizar_pagina(rows):
                     scroll=ft.ScrollMode.ALWAYS,
                     height=400,
                 ),
-                padding=ft.Padding(50, 50, 50, 50),  # Padding de 50 pixels em todos os lados
+                padding=ft.Padding(50, 0, 50, 35),  # Padding de 50 pixels em todos os lados
             )
 
             page.data_table_container = data_table_container
 
             # Adicione o contêiner à página
             page.controls.append(page.data_table_container)
+
+        atualizar_rodape()  # Atualiza a nota de rodapé
 
         page.update()
 
@@ -180,6 +221,8 @@ def executar_consulta(page):
     global driver
     global executado
     global mensagem_nenhum_resultado
+    mensagem_nenhum_resultado = None  # Reseta a mensagem de nenhum resultado
+
     running_event.set()
     options = webdriver.ChromeOptions()
     options.add_argument("--blink-settings=loadMediaAutomatically=2")
@@ -267,12 +310,16 @@ def executar_consulta(page):
             #resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se nenhum resultado válido
 
         atualizar_resultados(resultados)
+        atualizar_rodape()  # Atualiza a nota de rodapé
+
         
 
     except Exception as e:
         print(f"Erro geral: {e}")
         resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se houver um erro geral
         atualizar_resultados(resultados)
+        atualizar_rodape()  # Atualiza a nota de rodapé
+
         
     finally:
         if spinner_label:
@@ -527,5 +574,7 @@ def main(pg: ft.Page):
 
     page.update()
     update_varas_selecionadas()
+    atualizar_rodape()  # Atualiza a nota de rodapé
+
 
 ft.app(target=main)
