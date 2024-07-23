@@ -146,11 +146,14 @@ def atualizar_pagina(rows):
                 column_spacing=20,
             )
 
-            # Coloque o DataTable dentro de um Column com rolagem
-            data_table_container = ft.Column(
-                controls=[data_table],
-                scroll=ft.ScrollMode.ALWAYS,
-                height=400,
+            # Coloque o DataTable dentro de um Container
+            data_table_container = ft.Container(
+                content=ft.Column(
+                    controls=[data_table],
+                    scroll=ft.ScrollMode.ALWAYS,
+                    height=400,
+                ),
+                padding=ft.Padding(50, 50, 50, 50),  # Padding de 50 pixels em todos os lados
             )
 
             page.data_table_container = data_table_container
@@ -505,15 +508,15 @@ def main(pg: ft.Page):
                         ),
                         padding=ft.Padding(0, 0, 0, 20)  # Ajuste o padding conforme necessário
                     ),
-                    ft.Container(
-                        content=ft.Text(
-                            label_dev,
-                            size=20,
-                            weight="bold"
-                        ),
-                        alignment=ft.Alignment(0, 0.5),
-                        padding=ft.Padding(0, 0, 0, 20)
-                    ),
+                    # ft.Container(
+                    #     content=ft.Text(
+                    #         label_dev.value,
+                    #         size=8,
+                    #         #weight="bold"
+                    #     ),
+                    #     alignment=ft.Alignment(0, 0.5),
+                    #     padding=ft.Padding(0, 0, 0, 20)
+                    # ),
                 ]
             )
         )
@@ -521,7 +524,5 @@ def main(pg: ft.Page):
 
     page.update()
     update_varas_selecionadas()
-
-
 
 ft.app(target=main)
