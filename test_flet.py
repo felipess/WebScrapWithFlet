@@ -24,7 +24,7 @@ page = None
 varas_federais = []
 varas_selecionadas = []
 executado = False
-interval = 30
+interval = 900
 # Variável global para armazenar os resultados anteriores
 resultados_anteriores = []
 
