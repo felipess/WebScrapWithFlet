@@ -175,9 +175,9 @@ def atualizar_pagina(rows):
                 columns=[
                     ft.DataColumn(ft.Text("Data/Hora", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Autos", size=sizeFontRows)),
-                    ft.DataColumn(ft.Text("Classe", size=sizeFontRows)),
-                    ft.DataColumn(ft.Text("Processo", size=sizeFontRows)),
-                    ft.DataColumn(ft.Text("Parte", size=sizeFontRows)),
+                    ft.DataColumn(ft.Text("Juízo", size=sizeFontRows)),
+                    ft.DataColumn(ft.Text("Sala", size=sizeFontRows)),
+                    ft.DataColumn(ft.Text("Evento", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Ações", size=sizeFontRows)),
                 ],
                 rows=rows,
@@ -432,7 +432,6 @@ def main(pg: ft.Page):
                 "Selecionados",
                 size=16,
                 weight=ft.FontWeight.BOLD,
-                color=ft.colors.WHITE,
             ),
             ft.Container(
                 content=ft.ResponsiveRow(
