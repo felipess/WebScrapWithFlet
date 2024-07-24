@@ -57,7 +57,7 @@ def atualizar_rodape():
                                     ),
                                 ),
                                 ft.Row(
-                                    [ft.Text("contato: feliped@mpf.mp.br", size=10)],
+                                    [ft.Text("feliped@mpf.mp.br", size=9)],
                                     alignment=ft.MainAxisAlignment.END,
                                 ),
                             ]
@@ -123,7 +123,7 @@ def atualizar_resultados(resultados):
 
     # Comparar os novos resultados com os anteriores
     if resultados != resultados_anteriores:
-        page.snack_bar = ft.SnackBar(ft.Text("Nova(s) custódia(s) adicionada(s)!"), open=True, show_close_icon=True, duration=interval*1000-5000)
+        page.snack_bar = ft.SnackBar(ft.Text("Nova(s) custódia(s) localizada(s)!"), open=True, show_close_icon=True, duration=interval*1000-5000)
     
     # Atualizar os resultados anteriores
     resultados_anteriores = resultados.copy()
