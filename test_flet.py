@@ -32,27 +32,41 @@ def get_formatted_datetime():
     #return now.strftime("%d/%m/%Y %H:%M:%S")
     return now.strftime("%H:%M:%S")
 
+
 def atualizar_rodape():
     global page
-    global label_dev
-
-
-    #altura_total = page.height
-    #altura_conteudo = calcular_altura_conteudo()  # Função que calcula a altura do conteúdo acima do rodapé
+    #global label_dev
 
     rodape = ft.Container(
-        content=ft.Text(
-            label_dev.value,
-            size=10,
-            color=ft.colors.GREY_600,
-        ),
-        padding=ft.Padding(50, 5, 50, 5),  # Ajuste o padding conforme necessário
-        #bgcolor=ft.colors.GREY_100,
-        # border_radius=10,
-        # border=ft.border.all(1, ft.colors.GREY_900),
-        ink=True,
-
+        padding=ft.Padding(50, 50, 50, 50),  # Padding de 50 pixels em todos os lados
+        content=ft.Card(
+            ft.Container(
+                padding=ft.Padding(10, 10, 10, 10),  # Padding de 50 pixels em todos os lados
+                content=ft.Column(
+                    [
+                        ft.ResponsiveRow(
+                            [
+                                ft.ListTile(
+                                    # leading=ft.Icon(ft.icons.ALBUM),
+                                    title=ft.Text("Aviso:"),
+                                    subtitle=ft.Text(
+                                        "Utilize apenas como recurso auxiliar.\nEste aplicativo consulta a pauta de audiências do site da JFPR.\nCaso não tenha sido atualizada pela respectiva circunscrição ou não tenha sido lançada com os termos 'custódia', não encontrará resultado.",
+                                        size=10
+                                    ),
+                                ),
+                                ft.Row(
+                                    [ft.Text("contato: feliped@mpf.mp.br", size=10)],
+                                    alignment=ft.MainAxisAlignment.END,
+                                ),
+                            ]
+                        ),
+                    ],
+                )
+            )
+        )
     )
+
+
 
     if hasattr(page, 'rodape'):
         if page.rodape in page.controls:
@@ -71,8 +85,6 @@ def atualizar_rodape():
 # else:    
 ultima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
 proxima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
-# Label DEV
-label_dev = ft.Text("Aviso:\nUtilize apenas como recurso auxiliar.\nEste aplicativo consulta a pauta de audiências do site da JFPR.\nCaso não tenha sido atualizada pelo servidor da respectiva circunscrição ou não tenha sido lançada com os termos 'custódia', não encontrará resultado.")
 
 # Define o estilo do texto dos itens do dropdown
 text_style = ft.TextStyle(size=11)
@@ -202,7 +214,6 @@ def atualizar_pagina(rows):
             page.controls.append(page.data_table_container)
 
         atualizar_rodape()  # Atualiza a nota de rodapé
-
         page.update()
 
 
@@ -455,15 +466,14 @@ def main(pg: ft.Page):
         page.update()
 
     varas_dropdown = ft.Dropdown(
-        text_style=text_style,
+        text_size=10,
         options=[ft.dropdown.Option(varas) for varas in varas_federais],
         on_change=add_varas,
         label="Adicionar outras localidades para pesquisa",
         label_style=text_style,
         width=640,
-        border_radius=5
+        border_radius=5,
     )
-
     # Initialize selected_varas_list
     selected_varas_list = ft.ResponsiveRow(
         controls=[
@@ -512,17 +522,20 @@ def main(pg: ft.Page):
                         padding=ft.Padding(0, 0, 0, 20)
                     ),
                     ft.Container(
-                        content=ft.Row(
+                        content=ft.ResponsiveRow(
                             controls=[
                                 ft.Container(
                                     content=entry_data_inicio,
+                                    col={"sm": 2, "md": 2, "lg": 2, "xl": 2},  # Campos de data menores
                                 ),
                                 ft.Container(
                                     content=entry_data_fim,
+                                    col={"sm": 2, "md": 2, "lg": 2, "xl": 2},  # Campos de data menores
                                 ),
                                 ft.Container(
                                     content=varas_dropdown,
-                                )
+                                    col={"sm": 8, "md": 8, "lg": 8, "xl": 8},
+                                ),
                             ],
                             alignment=ft.MainAxisAlignment.START,
                             spacing=10,
@@ -557,15 +570,6 @@ def main(pg: ft.Page):
                         ),
                         padding=ft.Padding(0, 0, 0, 20)  # Ajuste o padding conforme necessário
                     ),
-                    # ft.Container(
-                    #     content=ft.Text(
-                    #         label_dev.value,
-                    #         size=8,
-                    #         #weight="bold"
-                    #     ),
-                    #     alignment=ft.Alignment(0, 0.5),
-                    #     padding=ft.Padding(0, 0, 0, 20)
-                    # ),
                 ]
             )
         )
