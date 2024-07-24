@@ -24,7 +24,9 @@ page = None
 varas_federais = []
 varas_selecionadas = []
 executado = False
-interval = 900
+interval = 30
+# Variável global para armazenar os resultados anteriores
+resultados_anteriores = []
 
 # Inicialização dos labels com datas e horas atuais
 def get_formatted_datetime():
@@ -75,14 +77,7 @@ def atualizar_rodape():
     page.rodape = rodape
     page.controls.append(page.rodape)
     page.update()
-
-
-
-# if executado:
-#     print(executado)
-#     ultima_consulta = ft.Text(f"Última consulta: {get_formatted_datetime()}", size=12, color=ft.colors.RED)
-#     proxima_consulta = ft.Text(f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=interval):%d/%m/%Y %H:%M:%S}", size=12, color=ft.colors.RED)
-# else:    
+   
 ultima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
 proxima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
 
@@ -124,8 +119,15 @@ def copiar_linha(conteudo_linha):
 mensagem_nenhum_resultado = None
 
 def atualizar_resultados(resultados):
-    global page
-    global mensagem_nenhum_resultado
+    global page, mensagem_nenhum_resultado, resultados_anteriores
+
+    # Comparar os novos resultados com os anteriores
+    if resultados != resultados_anteriores:
+        page.snack_bar = ft.SnackBar(ft.Text("Nova(s) custódia(s) adicionada(s)!"), open=True, show_close_icon=True, duration=interval*1000-5000)
+    
+    # Atualizar os resultados anteriores
+    resultados_anteriores = resultados.copy()
+    
     if page:
         # Atualizar os labels de data/hora
         ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}"
@@ -154,8 +156,6 @@ def atualizar_resultados(resultados):
 
         # Atualizar a página com base na variável
         atualizar_pagina(rows)
-
-
 
 def atualizar_pagina(rows):
     global page
@@ -229,10 +229,9 @@ def agendar_proxima_consulta():
     threading.Timer(delay, lambda: executar_consulta(page)).start()
 
 def executar_consulta(page):
-    global driver
-    global executado
-    global mensagem_nenhum_resultado
+    global driver, executado, mensagem_nenhum_resultado, resultados_anteriores
     mensagem_nenhum_resultado = None  # Reseta a mensagem de nenhum resultado
+    page.snack_bar = ft.SnackBar(ft.Text(""), open=False)
 
     running_event.set()
     options = webdriver.ChromeOptions()
@@ -363,6 +362,9 @@ def main(pg: ft.Page):
     page.title = "Pesquisa automatizada - Circurscrições da JF do Paraná"
     page.vertical_alignment = ft.MainAxisAlignment.START
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+
+    # Adicionar snackbar à página
+    page.snack_bar = ft.SnackBar(content=ft.Text(""))
 
     varas_federais = [vara.value for vara in VarasFederais]
 
