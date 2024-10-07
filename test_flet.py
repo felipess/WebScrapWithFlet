@@ -1,16 +1,19 @@
 import flet as ft
+import time
+import threading
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
-import threading
-import time
-import datetime
+from selenium.webdriver.chrome.options import Options
 from VarasFederais import VarasFederais
 from bs4 import BeautifulSoup
-from selenium.webdriver.common.by import By
+import datetime
+from bs4 import BeautifulSoup
 import pyperclip
+
+# Defina a data de validade
+data_validade = datetime.datetime(2024, 11, 4)  # Defina sua data de validade aqui
 
 # Variável global para o driver Selenium
 driver = None
@@ -28,11 +31,25 @@ interval = 900
 # Variável global para armazenar os resultados anteriores
 resultados_anteriores = []
 
+def verificar_validade():
+    if datetime.datetime.now() > data_validade:
+        
+        return False
+    return True
+
 # Inicialização dos labels com datas e horas atuais
 def get_formatted_datetime():
     now = datetime.datetime.now()
     #return now.strftime("%d/%m/%Y %H:%M:%S")
     return now.strftime("%H:%M:%S")
+
+# Chame essa função após driver.quit()
+# def close_specific_chrome_process(pid):
+#     try:
+#         p = psutil.Process(pid)
+#         p.terminate()
+#     except Exception as e:
+#         print(f"Erro ao fechar o processo: {e}")
 
 
 def atualizar_rodape():
@@ -41,31 +58,31 @@ def atualizar_rodape():
 
     rodape = ft.Container(
         padding=ft.Padding(50, 50, 50, 50),  # Padding de 50 pixels em todos os lados
-        content=ft.Card(
-            ft.Container(
-                padding=ft.Padding(10, 10, 10, 10),  # Padding de 50 pixels em todos os lados
-                content=ft.Column(
-                    [
-                        ft.ResponsiveRow(
-                            [
-                                ft.ListTile(
-                                    # leading=ft.Icon(ft.icons.ALBUM),
-                                    title=ft.Text("Aviso:"),
-                                    subtitle=ft.Text(
-                                        "Utilize apenas como recurso auxiliar.\nEste aplicativo consulta a pauta de audiências do site da JFPR.\nCaso não tenha sido atualizada pela respectiva circunscrição ou não tenha sido lançada com os termos 'custódia', não encontrará resultado.",
-                                        size=10
-                                    ),
-                                ),
-                                ft.Row(
-                                    [ft.Text("feliped@mpf.mp.br", size=9)],
-                                    alignment=ft.MainAxisAlignment.END,
-                                ),
-                            ]
-                        ),
-                    ],
-                )
-            )
-        )
+        # content=ft.Card(
+        #     ft.Container(
+        #         padding=ft.Padding(10, 10, 10, 10),  # Padding de 50 pixels em todos os lados
+        #         content=ft.Column(
+        #             [
+        #                 ft.ResponsiveRow(
+        #                     [
+        #                         ft.ListTile(
+        #                             # leading=ft.Icon(ft.icons.ALBUM),
+        #                             title=ft.Text("Aviso:"),
+        #                             subtitle=ft.Text(
+        #                                 "Utilize apenas como recurso auxiliar.\nEste aplicativo consulta a pauta de audiências do site da JFPR.\nCaso não tenha sido atualizada pela respectiva circunscrição ou não tenha sido lançada com os termos 'custódia', não encontrará resultado.",
+        #                                 size=10
+        #                             ),
+        #                         ),
+        #                         ft.Row(
+        #                             [ft.Text("feliped@mpf.mp.br", size=9)],
+        #                             alignment=ft.MainAxisAlignment.END,
+        #                         ),
+        #                     ]
+        #                 ),
+        #             ],
+        #         )
+        #     )
+        # )
     )
 
 
@@ -95,14 +112,16 @@ entry_data_inicio = ft.TextField(
     label_style=text_style,
     value=data_inicio_default,
     width=102,
-    text_style=text_style  # Tamanho da fonte ajustado para 10
+    text_style=text_style,  # Tamanho da fonte ajustado para 10
+    read_only=True  # BLOQUEIO DA EDIÇÃO DE DATA - Campo somente leitura
 )
 entry_data_fim = ft.TextField(
     label="Data Fim",
     label_style=text_style,
     value=data_fim_default,
     width=102,
-    text_style=text_style  # Tamanho da fonte ajustado para 10
+    text_style=text_style,  # Tamanho da fonte ajustado para 10
+    read_only=True  # BLOQUEIO DA EDIÇÃO DE DATA - Campo somente leitura
 )
 
 # Defina a ordem desejada das colunas
@@ -111,7 +130,11 @@ ordem_colunas = [4, 1, 2, 0, 3]  # Ordem original, pode ser ajustada conforme ne
 def copiar_linha(conteudo_linha):
     """Função para copiar o conteúdo da linha para a área de transferência."""
     conteudo_ordenado = [conteudo_linha[i] for i in ordem_colunas]  # Organiza o conteúdo conforme a ordem definida
-    texto = ' | '.join(conteudo_ordenado)  # Une o conteúdo da linha em uma string
+    texto = ' - '.join(conteudo_ordenado)  # Une o conteúdo da linha em uma string
+    
+    # Remove "Evento:" do texto, se presente
+    texto = texto.replace("Evento:", "").strip()  # Remove e limpa espaços em branco
+    
     pyperclip.copy(texto)  # Copia o texto para a área de transferência
     print(f"Conteúdo copiado: {texto}")
 
@@ -123,8 +146,9 @@ def atualizar_resultados(resultados):
 
     # Comparar os novos resultados com os anteriores
     if resultados != resultados_anteriores:
-        page.snack_bar = ft.SnackBar(ft.Text("Nova(s) custódia(s) localizada(s)!"), open=True, show_close_icon=True, duration=interval*1000-5000)
-    
+        snack_bar = ft.SnackBar(ft.Text("Nova(s) custódia(s) localizada(s)!"), open=True, show_close_icon=True, duration=interval*1000-5000)
+        page.overlay.append(snack_bar)
+        
     # Atualizar os resultados anteriores
     resultados_anteriores = resultados.copy()
     
@@ -203,7 +227,7 @@ def atualizar_pagina(rows):
                 content=ft.Column(
                     controls=[data_table],
                     scroll=ft.ScrollMode.ALWAYS,
-                    height=400,
+                    height=600,
                 ),
                 padding=ft.Padding(50, 0, 50, 35),  # Padding de 50 pixels em todos os lados
             )
@@ -228,26 +252,49 @@ def agendar_proxima_consulta():
     delay = (next_run - datetime.datetime.now()).total_seconds()
     threading.Timer(delay, lambda: executar_consulta(page)).start()
 
+
+def initialize_webdriver():
+    """Initialize the Selenium WebDriver with necessary options."""
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    
+    try:
+        driver = webdriver.Chrome(options=options)
+        print("Driver inicializado com sucesso")
+        return driver
+    except Exception as e:
+        print(f"Erro ao inicializar o driver: {e}")
+        return None
+
+def clear_and_send_keys(element, value):
+    """Clear an input element and send keys."""
+    element.clear()
+    element.send_keys(value)
+
+
 def executar_consulta(page):
     global driver, executado, mensagem_nenhum_resultado, resultados_anteriores
+    
+    driver = initialize_webdriver()
+    if not driver:
+        return  # Exit if driver initialization fails
+
     mensagem_nenhum_resultado = None  # Reseta a mensagem de nenhum resultado
-    page.snack_bar = ft.SnackBar(ft.Text(""), open=False)
+    snack_bar = ft.SnackBar(ft.Text(""), open=False)
+    page.overlay.append(snack_bar)
 
     running_event.set()
-    options = webdriver.ChromeOptions()
-    options.add_argument("--blink-settings=loadMediaAutomatically=2")
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--headless')
-    options.add_argument("--disable-gpu")  # Desabilita o uso da GPU
-
-
-    driver = webdriver.Chrome(options=options)
-    wait = WebDriverWait(driver, 30)  # Aumentando o tempo de espera
-
+    #options = webdriver.ChromeOptions()
+    
     try:
         resultados = []
+        titulos = ["Data/Hora", "Autos", "Classe", "Processo", "Parte", "Status", "Sistema"]
+        
+        wait = WebDriverWait(driver, 30)
         driver.get("https://eproc.jfpr.jus.br/eprocV2/externo_controlador.php?acao=pauta_audiencias")
+        
         wait.until(EC.presence_of_element_located((By.ID, "divRowVaraFederal")))
 
         data_inicio = entry_data_inicio.value.strip()
@@ -260,8 +307,6 @@ def executar_consulta(page):
         campo_data_fim = wait.until(EC.presence_of_element_located((By.ID, "txtVFDataTermino")))
         campo_data_fim.clear()
         campo_data_fim.send_keys(data_fim)
-
-        titulos = ["Data/Hora", "Autos", "Classe", "Processo", "Parte", "Status", "Sistema"]
 
         for idx, vara in enumerate(varas_selecionadas):
             print(f"Consultando: {vara}")
@@ -313,11 +358,11 @@ def executar_consulta(page):
 
             except Exception as e:
                 print(f"Erro ao consultar a vara {vara}: {e}")
+                return
 
         if not resultados:
             resultados = []
             mensagem_nenhum_resultado = "Nenhum resultado encontrado."
-            #resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se nenhum resultado válido
 
         atualizar_resultados(resultados)
         atualizar_rodape()  # Atualiza a nota de rodapé
@@ -329,9 +374,14 @@ def executar_consulta(page):
         resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se houver um erro geral
         atualizar_resultados(resultados)
         atualizar_rodape()  # Atualiza a nota de rodapé
+        return
 
         
     finally:
+        # Mantem Deabilitado ou Reabilita o botão no final da execução da consulta
+        start_button.disabled = True 
+        start_button.update()
+       
         if spinner_label:
             spinner_label.value = ""
             executado = True
@@ -346,25 +396,43 @@ def executar_consulta(page):
 start_button = ft.ElevatedButton(
     text="Iniciar Consulta",
     icon=ft.icons.PLAY_ARROW,
-    #bgcolor=ft.colors.BLUE_500,
-    on_click=lambda e: executar_consulta(page)
+    on_click=lambda e: iniciar_consulta(page, start_button)  # Passa o botão para a função
 )
+
+def iniciar_consulta(page, button):
+    # Desabilita o botão para evitar cliques duplos
+    start_button.disabled = True # Desabilita o botão para evitar cliques duplicados
+    button.text = "Em execução..."  # Muda o texto do botão
+    start_button.update()
+    # Chama a função de execução da consulta
+    executar_consulta(page)
 
 def main(pg: ft.Page):
     global entry_data_inicio, entry_data_fim, spinner_label, text_area, varas_federais, varas_selecionadas, page, ultima_consulta, proxima_consulta, selected_varas_list
-
     page = pg
-
     page.window.min_width = 1000
     page.window.width = 1000
     page.window.height = 1000
     page.window.min_height = 500
     page.title = "Pesquisa automatizada - Circurscrições da JF do Paraná"
+    
+    #page.add(ft.Text("A interface Flet está funcionando!"))
+    #page.update()
+    
     page.vertical_alignment = ft.MainAxisAlignment.START
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
+    
+
+
     # Adicionar snackbar à página
-    page.snack_bar = ft.SnackBar(content=ft.Text(""))
+    # snack_bar = ft.SnackBar(content=ft.Text("Mensagem aqui"), open=False)
+    # page.overlay.append(snack_bar)
+
+    if not verificar_validade():
+        pg.add(ft.Text("Este programa não é mais válido. Por favor, entre em contato com o suporte/desenvolvedor feliped@mpf.mp.br."))
+        pg.update()
+        return  # Encerra a execução se a validade não for atendida
 
     varas_federais = [vara.value for vara in VarasFederais]
 
@@ -375,6 +443,7 @@ def main(pg: ft.Page):
         VarasFederais.VARA_UMUARAMA_1.value: "1ª VF Umuarama",
         VarasFederais.VARA_PONTA_GROSSA_1.value: "1ª VF Ponta Grossa",
         VarasFederais.VARA_MARINGA_3.value: "3ª VF Maringá",
+        #VarasFederais.VARA_MARINGA_6.value: "6ª VF Maringá", #Somente previdenciarios
         VarasFederais.VARA_CASCAVEL_4.value: "4ª VF Cascavel",
         VarasFederais.VARA_FOZ_5.value: "5ª VF Foz",
         VarasFederais.VARA_LONDRINA_5.value: "5ª VF Londrina",
@@ -385,28 +454,39 @@ def main(pg: ft.Page):
     }
 
     varas_selecionadas_iniciais = [
-        VarasFederais.VARA_GUAIRA.value,
-        VarasFederais.VARA_FOZ_3.value,
-        VarasFederais.VARA_UMUARAMA_1.value,
-        VarasFederais.VARA_PONTA_GROSSA_1.value,
-        VarasFederais.VARA_MARINGA_3.value,
-        VarasFederais.VARA_CASCAVEL_4.value,
-        VarasFederais.VARA_FOZ_5.value,
-        VarasFederais.VARA_LONDRINA_5.value,
-        VarasFederais.VARA_CURITIBA_9.value,
-        VarasFederais.VARA_CURITIBA_13.value,
-        VarasFederais.VARA_CURITIBA_14.value,
-        VarasFederais.VARA_CURITIBA_23.value,
+        VarasFederais.VARA_GUAIRA.value, #
+        VarasFederais.VARA_FOZ_3.value, #
+        VarasFederais.VARA_UMUARAMA_1.value, #
+        VarasFederais.VARA_PONTA_GROSSA_1.value, #
+        VarasFederais.VARA_MARINGA_3.value, #
+        #VarasFederais.VARA_MARINGA_6.value, #Somente previdenciarios
+        VarasFederais.VARA_CASCAVEL_4.value, #
+        VarasFederais.VARA_FOZ_5.value, #
+        VarasFederais.VARA_LONDRINA_5.value, #
+        VarasFederais.VARA_CURITIBA_9.value, #
+        VarasFederais.VARA_CURITIBA_13.value, #
+        VarasFederais.VARA_CURITIBA_14.value, #
+        VarasFederais.VARA_CURITIBA_23.value, #
     ]
 
     varas_selecionadas = varas_selecionadas_iniciais.copy()
 
     def add_varas(e):
-        if varas_dropdown.value and varas_dropdown.value not in varas_selecionadas:
-            varas_selecionadas.append(varas_dropdown.value)
-            update_varas_selecionadas()
-            update_dropdown_options()
-            page.update()
+        """Adiciona uma vara selecionada à lista de varas selecionadas.
+        
+        Args:
+            e: Evento gerado pela mudança no dropdown.
+        """
+        if varas_dropdown.value:
+            if varas_dropdown.value not in varas_selecionadas:
+                # Adiciona a vara e atualiza a interface
+                varas_selecionadas.append(varas_dropdown.value)
+                update_varas_selecionadas()
+                update_dropdown_options()
+                page.update()
+            else:
+                # Alerta o usuário de que a vara já está selecionada
+                print("A vara já está selecionada!")
 
     def remove_varas(varas):
         if varas in varas_selecionadas:
@@ -582,4 +662,5 @@ def main(pg: ft.Page):
     atualizar_rodape()  # Atualiza a nota de rodapé
 
 
-ft.app(target=main)
+if __name__ == "__main__":
+    ft.app(target=main)

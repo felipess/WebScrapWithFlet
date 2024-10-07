@@ -1,6 +1,10 @@
 # requisitos 
 - Inno Setup para criar um instador - script na raiz
 
+# cmds
+PS C:\repos\Github\WebScrapWithFlet> flet run CustodiasFlet.py
+# é esse:
+PS C:\repos\Github\WebScrapWithFlet> flet run .\test_flet.py
 
 # WebScrap
 # execução para criação do .exe 

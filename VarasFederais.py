@@ -8,7 +8,7 @@ class VarasFederais(Enum):
     VARA_LONDRINA_5 = "5ª Vara Federal de Londrina"
     VARA_GUAIRA = "1ª Vara Federal de Guaíra"
     VARA_MARINGA_3 = "3ª Vara Federal de Maringá"
-    # VARA_MARINGA_6 = "6ª Vara Federal de Maringá" #Somente previdênciarios
+    VARA_MARINGA_6 = "6ª Vara Federal de Maringá" #Somente previdênciarios
     VARA_CURITIBA_13 = "13ª Vara Federal de Curitiba"
     VARA_CURITIBA_14 = "14ª Vara Federal de Curitiba"
     VARA_CURITIBA_23 = "23ª Vara Federal de Curitiba"
