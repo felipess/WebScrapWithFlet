@@ -267,7 +267,7 @@ def agendar_proxima_consulta():
 def initialize_webdriver():
     """Initialize the Selenium WebDriver with necessary options."""
     options = Options()
-    #options.add_argument("--headless")
+    options.add_argument("--headless")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--width=1080")  # Define a largura
@@ -275,10 +275,7 @@ def initialize_webdriver():
     global driver
 
     try:
-        # Inicializa o driver do Firefox com o caminho do Geckodriver
         driver = webdriver.Firefox(options=options)
-        print("Driver inicializado com sucesso")
-        
         print("Driver inicializado com sucesso")
         return driver
     except Exception as e:
