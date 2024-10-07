@@ -41,61 +41,6 @@ interval = 900
 # Variável global para armazenar os resultados anteriores
 resultados_anteriores = []
 
-# download_geckodriver
-def download_geckodriver():
-    # Obter a versão mais recente do Geckodriver
-    response = requests.get("https://api.github.com/repos/mozilla/geckodriver/releases")
-    if response.status_code != 200:
-        raise Exception("Failed to fetch the latest Geckodriver release information")
-
-    releases = response.json()
-    # Filtrar a versão mais recente
-    latest_release = next((release for release in releases if "tag_name" in release), None)
-    if not latest_release:
-        raise Exception("Failed to find the latest Geckodriver release")
-
-    version = latest_release["tag_name"]
-    print(f"Latest Geckodriver version: {version}")
-
-    driver_name = f"geckodriver-{version}-win64.zip"
-    url = f"https://github.com/mozilla/geckodriver/releases/download/{version}/{driver_name}"
-
-    print(f"Downloading Geckodriver from {url}")
-
-    # Baixar o Geckodriver
-    response = requests.get(url)
-    if response.status_code == 200:
-        zip_path = os.path.join(os.getcwd(), "geckodriver.zip")
-        with open(zip_path, "wb") as f:
-            f.write(response.content)
-
-        # Extrair o arquivo
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(os.getcwd())
-
-        # Remover o arquivo zip após a extração
-        os.remove(zip_path)
-        print("Geckodriver downloaded and extracted.")
-
-        # Verifique o conteúdo do diretório após a extração
-        print("Contents of the current directory after extraction:")
-        print(os.listdir(os.getcwd()))  # Lista os arquivos no diretório atual
-    else:
-        raise Exception("Failed to download Geckodriver")
-
-# Baixar o Geckodriver, se não estiver presente
-if not os.path.exists("geckodriver.exe"):
-    download_geckodriver()
-
-# Verifique se o Geckodriver foi extraído corretamente
-if not os.path.exists("geckodriver.exe"):
-    raise Exception("Geckodriver not found after download.")
-
-# Torna o Geckodriver executável
-if platform.system() == "Windows":
-    # Não é necessário mudar permissões no Windows
-    print("Geckodriver is ready to use.")
-
 
 def verificar_validade():
     if datetime.datetime.now() > data_validade:
@@ -331,7 +276,7 @@ def initialize_webdriver():
 
     try:
         # Inicializa o driver do Firefox com o caminho do Geckodriver
-        driver = webdriver.Firefox(service=FirefoxService(os.path.abspath("geckodriver.exe")), options=options)
+        driver = webdriver.Firefox(options=options)
         print("Driver inicializado com sucesso")
         
         print("Driver inicializado com sucesso")
