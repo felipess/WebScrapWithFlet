@@ -1,4 +1,3 @@
-import os
 import flet as ft
 import time
 import threading
@@ -8,19 +7,25 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.keys import Keys
 from VarasFederais import VarasFederais
 from bs4 import BeautifulSoup
 import datetime
 import pyperclip
-from selenium.webdriver.common.keys import Keys
+import subprocess
 
-import requests
-import zipfile
-import platform
+def obter_versao_git():
+    try:
+        # Executa o comando git para obter a versão
+        resultado = subprocess.check_output(["git", "describe", "--tags"], stderr=subprocess.STDOUT)
+        return resultado.decode("utf-8").strip()  # Decodifica e remove espaços em branco
+    except subprocess.CalledProcessError:
+        return "v0.0.0"  # Valor padrão se não conseguir obter a versão
 
 
 # Defina a data de validade
-data_validade = datetime.datetime(2024, 11, 4)  # Defina sua data de validade aqui
+data_validade = datetime.datetime(2024, 12, 8)  # Defina sua data de validade aqui
+VERSION = obter_versao_git()
 
 # Variável global para o driver Selenium
 driver = None
@@ -32,19 +37,14 @@ text_area = None
 spinner_label = None
 page = None
 varas_federais = []
-# varas_selecionadas = [
-#   "3ª Vara Federal de Foz do Iguaçu",
-#   "5ª Vara Federal de Foz do Iguaçu",
-# ]
 executado = False
-interval = 900
+interval = 600  # 10 min
 # Variável global para armazenar os resultados anteriores
 resultados_anteriores = []
 
 
 def verificar_validade():
-    if datetime.datetime.now() > data_validade:
-        
+    if datetime.datetime.now() > data_validade:        
         return False
     return True
 
@@ -329,7 +329,6 @@ def executar_consulta(page):
         for idx, vara in enumerate(varas_selecionadas):
             print(f"Consultando: {vara}")  # Certifique-se que o valor está correto
 
-
             if termino_event.is_set():
                 break
 
@@ -352,8 +351,6 @@ def executar_consulta(page):
 
                 # Pressiona Enter para selecionar a primeira opção filtrada
                 search_input.send_keys(Keys.RETURN)
-
-                # Aguarda a atualização da lista
 
                 # Botão de consultar
                 botao_consultar = wait.until(EC.element_to_be_clickable((By.ID, "btnConsultar")))
@@ -430,11 +427,9 @@ start_button = ft.ElevatedButton(
 )
 
 def iniciar_consulta(page, button):
-    # Desabilita o botão para evitar cliques duplos
     start_button.disabled = True # Desabilita o botão para evitar cliques duplicados
     button.text = "Em execução..."  # Muda o texto do botão
     start_button.update()
-    # Chama a função de execução da consulta
     executar_consulta(page)
 
 def main(pg: ft.Page):
@@ -445,23 +440,13 @@ def main(pg: ft.Page):
     page.window.width = 1000
     page.window.height = 1000
     page.window.min_height = 500
-    page.title = "Pesquisa automatizada - Circurscrições da JF do Paraná - Versão 1.5"
-    
-    #page.add(ft.Text("A interface Flet está funcionando!"))
-    #page.update()
+    page.title = f"Pesquisa automatizada - Circunscrições da JF do Paraná - Versão {VERSION}"
     
     page.vertical_alignment = ft.MainAxisAlignment.START
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
-    
-
-
-    # Adicionar snackbar à página
-    # snack_bar = ft.SnackBar(content=ft.Text("Mensagem aqui"), open=False)
-    # page.overlay.append(snack_bar)
-
     if not verificar_validade():
-        pg.add(ft.Text("Este programa não é mais válido. Por favor, entre em contato com o suporte/desenvolvedor feliped@mpf.mp.br."))
+        pg.add(ft.Text("Este programa não é mais válido - permissão expirada. Entre em contato com o desenvolvedor feliped@mpf.mp.br pelo Zoom."))
         pg.update()
         return  # Encerra a execução se a validade não for atendida
 
