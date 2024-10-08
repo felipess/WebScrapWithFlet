@@ -15,7 +15,7 @@ import pyperclip
 
 # Defina a data de validade
 data_validade = datetime.datetime(2024, 12, 8)  # Defina sua data de validade aqui
-VERSION = "1.6"
+VERSION = "1.7"
 
 # Variável global para o driver Selenium
 driver = None
@@ -55,7 +55,7 @@ def get_formatted_datetime():
 
 def atualizar_rodape():
     global page
-    #global label_dev
+    # global label_dev
 
     rodape = ft.Container(
         padding=ft.Padding(50, 50, 50, 50),  # Padding de 50 pixels em todos os lados
@@ -133,11 +133,12 @@ def copiar_linha(conteudo_linha):
     conteudo_ordenado = [conteudo_linha[i] for i in ordem_colunas]  # Organiza o conteúdo conforme a ordem definida
     texto = ' - '.join(conteudo_ordenado)  # Une o conteúdo da linha em uma string
     
-    # Remove "Evento:" do texto, se presente
-    texto = texto.replace("Evento:", "").strip()  # Remove e limpa espaços em branco
+    # Remove "Evento:" e "Sala:" do texto, se presentes
+    texto = texto.replace("Evento:", "").replace("Sala:", "").strip()  # Remove e limpa espaços em branco
     
     pyperclip.copy(texto)  # Copia o texto para a área de transferência
     print(f"Conteúdo copiado: {texto}")
+
 
 # Variável global para armazenar a mensagem de nenhum resultado
 mensagem_nenhum_resultado = None
@@ -477,29 +478,29 @@ def main(pg: ft.Page):
 
     varas_selecionadas = varas_selecionadas_iniciais.copy()
 
-    def add_varas(e):
-        """Adiciona uma vara selecionada à lista de varas selecionadas.
+    # def add_varas(e):
+    #     """Adiciona uma vara selecionada à lista de varas selecionadas.
         
-        Args:
-            e: Evento gerado pela mudança no dropdown.
-        """
-        if varas_dropdown.value:
-            if varas_dropdown.value not in varas_selecionadas:
-                # Adiciona a vara e atualiza a interface
-                varas_selecionadas.append(varas_dropdown.value)
-                # update_varas_selecionadas()
-                update_dropdown_options()
-                page.update()
-            else:
-                # Alerta o usuário de que a vara já está selecionada
-                print("A vara já está selecionada!")
+    #     Args:
+    #         e: Evento gerado pela mudança no dropdown.
+    #     """
+    #     if varas_dropdown.value:
+    #         if varas_dropdown.value not in varas_selecionadas:
+    #             # Adiciona a vara e atualiza a interface
+    #             varas_selecionadas.append(varas_dropdown.value)
+    #             # update_varas_selecionadas()
+    #             update_dropdown_options()
+    #             page.update()
+    #         else:
+    #             # Alerta o usuário de que a vara já está selecionada
+    #             print("A vara já está selecionada!")
 
-    def remove_varas(varas):
-        if varas in varas_selecionadas:
-            varas_selecionadas.remove(varas)
-            # update_varas_selecionadas()
-            update_dropdown_options()
-            page.update()
+    # def remove_varas(varas):
+    #     if varas in varas_selecionadas:
+    #         varas_selecionadas.remove(varas)
+    #         # update_varas_selecionadas()
+    #         update_dropdown_options()
+    #         page.update()
 
     def update_varas_selecionadas():
         varas_items = [
@@ -513,7 +514,7 @@ def main(pg: ft.Page):
                             height=25,
                             bgcolor=ft.colors.BLUE,
                             border_radius=5,
-                            on_click=lambda e, v=varas: remove_varas(v),
+                            #on_click=lambda e, v=varas: remove_varas(v),
                             tooltip="Remover",
                         ),
                     ],
@@ -546,22 +547,22 @@ def main(pg: ft.Page):
         # Atualiza a página para refletir as mudanças
         page.update()
 
-    def update_dropdown_options():
-        varas_dropdown.options = [
-            ft.dropdown.Option(varas)
-            for varas in varas_federais if varas not in varas_selecionadas
-        ]
-        page.update()
+    # def update_dropdown_options():
+    #     varas_dropdown.options = [
+    #         ft.dropdown.Option(varas)
+    #         for varas in varas_federais if varas not in varas_selecionadas
+    #     ]
+    #     page.update()
 
-    varas_dropdown = ft.Dropdown(
-        text_size=10,
-        options=[ft.dropdown.Option(varas) for varas in varas_federais],
-        on_change=add_varas,
-        label="Adicionar outras localidades para pesquisa",
-        label_style=text_style,
-        width=640,
-        border_radius=5,
-    )
+    # varas_dropdown = ft.Dropdown(
+    #     text_size=10,
+    #     options=[ft.dropdown.Option(varas) for varas in varas_federais],
+    #     on_change=add_varas,
+    #     label="Adicionar outras localidades para pesquisa",
+    #     label_style=text_style,
+    #     width=640,
+    #     border_radius=5,
+    # )
     
     #Initialize selected_varas_list
     selected_varas_list = ft.ResponsiveRow(
@@ -576,7 +577,7 @@ def main(pg: ft.Page):
                             height=25,
                             bgcolor=ft.colors.BLUE,
                             border_radius=5,
-                            on_click=lambda e, v=varas: remove_varas(v),
+                            #on_click=lambda e, v=varas: remove_varas(v),
                             tooltip="Remover",
                         ),
                     ],
@@ -621,10 +622,10 @@ def main(pg: ft.Page):
                                     content=entry_data_fim,
                                     col={"sm": 2, "md": 2, "lg": 2, "xl": 2},  # Campos de data menores
                                 ),
-                                ft.Container(
-                                    content=varas_dropdown,
-                                    col={"sm": 8, "md": 8, "lg": 8, "xl": 8},
-                                ),
+                                # ft.Container(
+                                #     content=varas_dropdown,
+                                #     col={"sm": 8, "md": 8, "lg": 8, "xl": 8},
+                                # ),
                             ],
                             alignment=ft.MainAxisAlignment.START,
                             spacing=10,
