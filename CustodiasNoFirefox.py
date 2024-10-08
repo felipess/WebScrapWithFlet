@@ -445,7 +445,7 @@ def main(pg: ft.Page):
     page.window.width = 1000
     page.window.height = 1000
     page.window.min_height = 500
-    page.title = "Pesquisa automatizada - Circurscrições da JF do Paraná"
+    page.title = "Pesquisa automatizada - Circurscrições da JF do Paraná - Versão 1.5"
     
     #page.add(ft.Text("A interface Flet está funcionando!"))
     #page.update()
