@@ -5,7 +5,6 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.keys import Keys
 from VarasFederais import VarasFederais
@@ -26,22 +25,6 @@ termino_event = threading.Event()
 executado = False
 interval = 600
 resultados_anteriores = []
-
-
-def verificar_validade():
-    if datetime.datetime.now() > data_validade:        
-        return False
-    return True
-
-# Inicialização dos labels com datas e horas atuais
-def get_formatted_datetime():
-    now = datetime.datetime.now()
-    #return now.strftime("%d/%m/%Y %H:%M:%S")
-    return now.strftime("%H:%M:%S")
-
-def atualizar_rodape():
-    global page
-    # global label_dev
    
 ultima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
 proxima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
@@ -54,6 +37,12 @@ sizeFontRows = 10
 hoje = datetime.datetime.now()
 data_inicio_default = hoje.strftime("%d/%m/%Y")
 data_fim_default = (hoje + datetime.timedelta(days=1)).strftime("%d/%m/%Y")
+
+# Variável global para armazenar a mensagem de nenhum resultado
+mensagem_nenhum_resultado = None
+
+# Defina a ordem desejada das colunas
+ordem_colunas = [4, 1, 2, 0, 3]  # Ordem original, pode ser ajustada conforme necessário
 
 entry_data_inicio = ft.TextField(
     label="Data Início",
@@ -71,9 +60,26 @@ entry_data_fim = ft.TextField(
     text_style=text_style,  # Tamanho da fonte ajustado para 10
     read_only=True  # BLOQUEIO DA EDIÇÃO DE DATA - Campo somente leitura
 )
+start_button = ft.ElevatedButton(
+    text="Iniciar Consulta",
+    icon=ft.icons.PLAY_ARROW,
+    on_click=lambda e: iniciar_consulta(page, start_button)  # Passa o botão para a função
+)
 
-# Defina a ordem desejada das colunas
-ordem_colunas = [4, 1, 2, 0, 3]  # Ordem original, pode ser ajustada conforme necessário
+def verificar_validade():
+    if datetime.datetime.now() > data_validade:        
+        return False
+    return True
+
+# Inicialização dos labels com datas e horas atuais
+def get_formatted_datetime():
+    now = datetime.datetime.now()
+    #return now.strftime("%d/%m/%Y %H:%M:%S")
+    return now.strftime("%H:%M:%S")
+
+def atualizar_rodape():
+    global page
+    # global label_dev
 
 def copiar_linha(conteudo_linha):
     """Função para copiar o conteúdo da linha para a área de transferência."""
@@ -111,9 +117,6 @@ def copiar_linha(conteudo_linha):
         texto = texto.split("- Sala:")[0].strip()
     pyperclip.copy(texto)  # Copia o texto para a área de transferência
     print("Copiado texto: " + texto)
-
-# Variável global para armazenar a mensagem de nenhum resultado
-mensagem_nenhum_resultado = None
 
 def atualizar_resultados(resultados):
     global page, mensagem_nenhum_resultado, resultados_anteriores
@@ -226,9 +229,10 @@ def agendar_proxima_consulta():
     delay = (next_run - datetime.datetime.now()).total_seconds()
     threading.Timer(delay, lambda: executar_consulta(page)).start()
 
-# Função para verificar e encerrar processos do Firefox
-def finalizar_processos_firefox():
+# Função para verificar e encerrar processos do Firefox e Geckodriver
+def finalizar_processos():
     firefox_processes = []
+    geckodriver_processes = []
     
     # Verifica todos os processos em execução
     for proc in psutil.process_iter(['pid', 'name']):
@@ -236,24 +240,32 @@ def finalizar_processos_firefox():
             # Verifica se o processo tem "firefox" no nome
             if 'firefox' in proc.info['name'].lower():
                 firefox_processes.append(proc)
+            # Verifica se o processo tem "geckodriver" no nome
+            elif 'geckodriver' in proc.info['name'].lower():
+                geckodriver_processes.append(proc)
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             continue
 
-    # Encerra os processos encontrados
-    for proc in firefox_processes:
-        try:
-            proc.terminate()  # Tenta encerrar o processo educadamente
-            time.sleep(3)  # Espera um pouco para ver se o processo encerra
-            if proc.is_running():
-                print(f"Processo ainda em execução, forçando encerramento: {proc.pid}")
-                proc.kill()  # Força o encerramento do processo se não encerrar
-                print(f"Processo encerrado forçadamente: {proc.pid}")
-            else:
-                print(f"Processo encerrado: {proc.pid}")
-        except psutil.NoSuchProcess:
-            print(f"Processo do Firefox já encerrado: {proc.pid}")
-        except Exception as e:
-            print(f"Erro ao tentar encerrar o processo: {e}")
+    # Função para encerrar processos
+    def encerrar_processos(process_list, process_name):
+        for proc in process_list:
+            try:
+                proc.terminate()  # Tenta encerrar o processo educadamente
+                time.sleep(3)  # Espera um pouco para ver se o processo encerra
+                if proc.is_running():
+                    print(f"Processo ainda em execução, forçando encerramento: {proc.pid} ({process_name})")
+                    proc.kill()  # Força o encerramento do processo se não encerrar
+                    print(f"Processo {process_name} encerrado forçadamente: {proc.pid}")
+                else:
+                    print(f"Processo {process_name} encerrado: {proc.pid}")
+            except psutil.NoSuchProcess:
+                print(f"Processo {process_name} já encerrado: {proc.pid}")
+            except Exception as e:
+                print(f"Erro ao tentar encerrar o processo {process_name}: {e}")
+    # Encerra os processos do Firefox
+    encerrar_processos(firefox_processes, "Firefox")
+    # Encerra os processos do Geckodriver
+    encerrar_processos(geckodriver_processes, "Geckodriver")
 
 def finalizar_driver():
     """Finaliza o WebDriver e seus processos associados."""
@@ -274,11 +286,25 @@ def finalizar_driver():
         except Exception as e:
             print(f"Erro ao tentar encerrar o processo: {e}")
 
+def finalizar_app_processos():
+    for proc in psutil.process_iter(['pid', 'name']):
+        if proc.info['name'] == 'CustodiasApp.exe':
+            time.sleep(3)
+            try:
+                proc.terminate()
+                time.sleep(3)
+                if proc.is_running():
+                    proc.kill()  # Força se ainda estiver rodando
+                print(f"Processo CustodiasApp.exe encerrado: {proc.pid}")
+            except psutil.NoSuchProcess:
+                print(f"Processo já encerrado.")
+
 # Função chamada ao fechar o programa
 def on_close(e):
     """Evento chamado ao fechar a janela."""
     finalizar_driver()  # Função para finalizar o WebDriver
-    finalizar_processos_firefox()  # Função para encerrar os processos do Firefox
+    finalizar_processos()  # Função para encerrar os processos do Firefox e Geckodriver
+    finalizar_app_processos()
     print("Janela fechada. Programa encerrado.")
 
 def initialize_webdriver():    
@@ -305,6 +331,20 @@ def clear_and_send_keys(element, value):
     """Clear an input element and send keys."""
     element.clear()
     element.send_keys(value)
+
+def iniciar_consulta(page, button):
+    start_button.disabled = True # Desabilita o botão para evitar cliques duplicados
+    button.text = "Em execução..."  # Muda o texto do botão
+    start_button.update()
+    spinner_label.value = f"Pesquisa iniciada..."
+    page.update()
+    executar_consulta(page)
+
+def windowSize(page):
+    page.window.min_width = 1000
+    page.window.width = 1000
+    page.window.height = 1000
+    page.window.min_height = 500
 
 
 def executar_consulta(page):
@@ -442,27 +482,6 @@ def executar_consulta(page):
         if not termino_event.is_set():
             agendar_proxima_consulta()
         print("Consulta finalizada")
-
-
-start_button = ft.ElevatedButton(
-    text="Iniciar Consulta",
-    icon=ft.icons.PLAY_ARROW,
-    on_click=lambda e: iniciar_consulta(page, start_button)  # Passa o botão para a função
-)
-
-def iniciar_consulta(page, button):
-    start_button.disabled = True # Desabilita o botão para evitar cliques duplicados
-    button.text = "Em execução..."  # Muda o texto do botão
-    start_button.update()
-    spinner_label.value = f"Pesquisa iniciada..."
-    page.update()
-    executar_consulta(page)
-
-def windowSize(page):
-    page.window.min_width = 1000
-    page.window.width = 1000
-    page.window.height = 1000
-    page.window.min_height = 500
 
 def main(pg: ft.Page):
     global driver, driver_pid, entry_data_inicio, entry_data_fim, spinner_label, varas_federais, varas_selecionadas, page, ultima_consulta, proxima_consulta 
