@@ -15,7 +15,7 @@ import pyperclip
 
 # Defina a data de validade
 data_validade = datetime.datetime(2024, 12, 8)  # Defina sua data de validade aqui
-VERSION = "1.8"
+VERSION = "1.9"
 
 # Variável global para o driver Selenium
 driver = None
