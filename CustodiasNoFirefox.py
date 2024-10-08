@@ -12,24 +12,19 @@ from VarasFederais import VarasFederais
 from bs4 import BeautifulSoup
 import datetime
 import pyperclip
+import psutil
 
 # Defina a data de validade
 data_validade = datetime.datetime(2024, 12, 8)  # Defina sua data de validade aqui
-VERSION = "1.9"
 
-# Variável global para o driver Selenium
+# Variáveis globais
+VERSION = "2.0"
 driver = None
-
-# Definição das variáveis e funções necessárias
+driver_pid = None
 running_event = threading.Event()
 termino_event = threading.Event()
-text_area = None
-spinner_label = None
-page = None
-varas_federais = []
 executado = False
-interval = 600  # 10 min
-# Variável global para armazenar os resultados anteriores
+interval = 600
 resultados_anteriores = []
 
 
@@ -243,8 +238,33 @@ def agendar_proxima_consulta():
     delay = (next_run - datetime.datetime.now()).total_seconds()
     threading.Timer(delay, lambda: executar_consulta(page)).start()
 
+def finalizar_driver():
+    """Finaliza o WebDriver e seus processos associados."""
+    global driver, driver_pid
+    if driver:
+        driver.quit()
+    if driver_pid:
+        try:
+            proc = psutil.Process(driver_pid)
+            proc.terminate()  # Tenta encerrar o processo "educadamente"
+            time.sleep(3)  # Espera um pouco para ver se o processo encerra
+            if proc.is_running():
+                print(f"Processo ainda em execução, forçando encerramento: {driver_pid}")
+                proc.kill()  # Força o encerramento do processo
+                print(f"Processo encerrado forçadamente: {driver_pid}")
+        except psutil.NoSuchProcess:
+            print(f"Processo do driver já encerrado: {driver_pid}")
+        except Exception as e:
+            print(f"Erro ao tentar encerrar o processo: {e}")
 
-def initialize_webdriver():
+def on_close(e):
+    """Evento chamado ao fechar a janela."""
+    finalizar_driver()
+    running_event.clear()  # Limpa o evento de execução
+    print("Janela fechada. Programa encerrado.")
+
+def initialize_webdriver():    
+    global driver_pid
     """Initialize the Selenium WebDriver with necessary options."""
     options = Options()
     options.add_argument("--headless")
@@ -256,7 +276,8 @@ def initialize_webdriver():
 
     try:
         driver = webdriver.Firefox(options=options)
-        print("Driver inicializado com sucesso")
+        driver_pid = driver.service.process.pid  # Captura o PID do processo do driver
+        print(f"Driver inicializado com sucesso com PID: {driver_pid}")
         return driver
     except Exception as e:
         print(f"Erro ao inicializar o driver: {e}")
@@ -269,7 +290,7 @@ def clear_and_send_keys(element, value):
 
 
 def executar_consulta(page):
-    global driver, executado, mensagem_nenhum_resultado, resultados_anteriores
+    global driver, driver_pid, executado, mensagem_nenhum_resultado, resultados_anteriores
     
     print("Consulta Iniciada...")
 
@@ -282,7 +303,6 @@ def executar_consulta(page):
     page.overlay.append(snack_bar)
 
     running_event.set()
-    #options = webdriver.ChromeOptions()
     
     try:
         resultados = []
@@ -373,9 +393,7 @@ def executar_consulta(page):
             mensagem_nenhum_resultado = "Nenhum resultado encontrado."
 
         atualizar_resultados(resultados)
-        atualizar_rodape()  # Atualiza a nota de rodapé
-
-        
+        atualizar_rodape()  # Atualiza a nota de rodapé        
 
     except Exception as e:
         print(f"Erro geral: {e}")
@@ -385,21 +403,27 @@ def executar_consulta(page):
         return
 
         
-    finally:
-        # Mantem Deabilitado ou Reabilita o botão no final da execução da consulta
-        start_button.disabled = True 
+    finally:        
+        # Atualiza o estado do botão e outros elementos da interface
+        start_button.disabled = True
         start_button.update()
 
         if spinner_label:
             spinner_label.value = ""
             executado = True
             page.update()
-        running_event.clear()
+        
+         # Tenta encerrar o driver corretamente
         if driver:
             driver.quit()
+
+        if driver_pid:
+            finalizar_driver()  # Chama a função para encerrar o processo
+        
+        running_event.clear()
         if not termino_event.is_set():
             agendar_proxima_consulta()
-        print("Executada consulta")
+        print("Consulta finalizada")
 
 
 start_button = ft.ElevatedButton(
@@ -423,9 +447,11 @@ def windowSize(page):
     page.window.min_height = 500
 
 def main(pg: ft.Page):
-    global entry_data_inicio, entry_data_fim, spinner_label, text_area, varas_federais, varas_selecionadas, page, ultima_consulta, proxima_consulta 
+    global driver, driver_pid, entry_data_inicio, entry_data_fim, spinner_label, varas_federais, varas_selecionadas, page, ultima_consulta, proxima_consulta 
     # selected_varas_list
+    # text_area
     page = pg
+    page.on_close = on_close  # Define o manipulador para o fechamento da janela
     windowSize(page)
 
     page.title = f"Pesquisa automatizada - Circunscrições da JF do Paraná - Versão {VERSION}"

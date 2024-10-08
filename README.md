@@ -41,3 +41,6 @@ Prm-Foz/Nucrimj/Subjur
 4. intervalo de busca reduzido para execução a cada 10 minutos;
 5. mudança de funcionamento do Chrome para Firefox para remoção do bug da janela em branco.
 
+Observação:
+Deve ter instalado o navegador Firefox no computador para funcionamento.
+
