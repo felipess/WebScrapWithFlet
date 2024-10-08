@@ -32,3 +32,12 @@ Em caso de ausência de alguma vara federal que realize audiências de custódia
 
 Desenvolvido por feliped@mpf.mp.br
 Prm-Foz/Nucrimj/Subjur
+
+# README USUARIO
+# Ajustes 
+1. Quando tem (nova) audiência o programa maximiza a janela - funcionando como um alerta;
+2. ao clicar no Botão de iniciar, ele fica inativo para evitar pesquisas em paralelo;
+3. quando copia o texto da custódia, já formata e deixa pronto para colar no Zoom sem necessidade de edição, remove informações desnecessárias e coloca hífen;
+4. intervalo de busca reduzido para execução a cada 10 minutos;
+5. mudança de funcionamento do Chrome para Firefox para remoção do bug da janela em branco.
+
