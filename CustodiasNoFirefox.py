@@ -131,14 +131,39 @@ ordem_colunas = [4, 1, 2, 0, 3]  # Ordem original, pode ser ajustada conforme ne
 def copiar_linha(conteudo_linha):
     """Função para copiar o conteúdo da linha para a área de transferência."""
     conteudo_ordenado = [conteudo_linha[i] for i in ordem_colunas]  # Organiza o conteúdo conforme a ordem definida
-    texto = ' - '.join(conteudo_ordenado)  # Une o conteúdo da linha em uma string
-    
-    # Remove "Evento:" e "Sala:" do texto, se presentes
-    texto = texto.replace("Evento:", "").replace("Sala:", "").strip()  # Remove e limpa espaços em branco
-    
-    pyperclip.copy(texto)  # Copia o texto para a área de transferência
-    print(f"Conteúdo copiado: {texto}")
 
+    # Modifica o conteúdo da coluna 0
+    if len(conteudo_ordenado) > 0:  # Verifica se a coluna 0 existe
+        coluna_0_texto = conteudo_ordenado[0]
+
+        # Remove "Observação:" e tudo o que vem depois
+        if "Observação:" in coluna_0_texto:
+            coluna_0_texto = coluna_0_texto.split("Observação:")[0].strip()  # Corta até antes de "Observação:"
+        
+        conteudo_ordenado[0] = coluna_0_texto  # Atualiza a coluna 0
+
+    # Modifica o conteúdo da coluna 4
+    if len(conteudo_ordenado) > 4:  # Verifica se a coluna 4 existe
+        coluna_4_texto = conteudo_ordenado[4]
+
+        # Remove tudo após "Observação:" e a própria palavra
+        if "Observação:" in coluna_4_texto:
+            coluna_4_texto = coluna_4_texto.split("Observação:")[0].strip()  # Corta até antes de "Observação:"
+        
+        conteudo_ordenado[4] = coluna_4_texto  # Atualiza a coluna 4 com o texto modificado
+
+    # Formata o texto final
+    texto = ' - '.join(conteudo_ordenado)  # Une o conteúdo da linha em uma string
+
+    # Remove "Evento:" do texto, se presente
+    texto = texto.replace("Evento:", "").strip()
+    
+
+    # Remove "Sala:" e tudo que vem depois
+    if "Sala:" in texto:
+        texto = texto.split("- Sala:")[0].strip()
+    pyperclip.copy(texto)  # Copia o texto para a área de transferência
+    print("Copiado texto: " + texto)
 
 # Variável global para armazenar a mensagem de nenhum resultado
 mensagem_nenhum_resultado = None
@@ -188,8 +213,6 @@ def atualizar_pagina(rows):
     global mensagem_nenhum_resultado
 
     if page:
-        print(mensagem_nenhum_resultado)
-        
         # Remover a mensagem de "Nenhum resultado encontrado" se estiver presente
         if hasattr(page, 'mensagem_nenhum_resultado'):
             if page.mensagem_nenhum_resultado in page.controls:
@@ -208,7 +231,6 @@ def atualizar_pagina(rows):
             if page.mensagem_nenhum_resultado not in page.controls:
                 page.controls.append(page.mensagem_nenhum_resultado)
         else:
-            print(mensagem_nenhum_resultado)
             data_table = ft.DataTable(
                 columns=[
                     ft.DataColumn(ft.Text("Data/Hora", size=sizeFontRows)),
@@ -316,7 +338,6 @@ def executar_consulta(page):
         campo_data_fim.clear()
         campo_data_fim.send_keys(data_fim)
 
-        print(f"varas_selecionadas: {varas_selecionadas}")
         for idx, vara in enumerate(varas_selecionadas):
             print(f"Consultando: {vara}")  # Certifique-se que o valor está correto
 
@@ -529,7 +550,7 @@ def main(pg: ft.Page):
 
         selected_varas_list.controls = [
             ft.Text(
-                "Selecionados",
+                "Varas Federais selecionadas",
                 size=16,
                 weight=ft.FontWeight.BOLD,
             ),
