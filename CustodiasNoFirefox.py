@@ -412,6 +412,8 @@ def iniciar_consulta(page, button):
     start_button.disabled = True # Desabilita o botão para evitar cliques duplicados
     button.text = "Em execução..."  # Muda o texto do botão
     start_button.update()
+    spinner_label.value = f"Pesquisa iniciada..."
+    page.update()
     executar_consulta(page)
 
 def windowSize(page):
