@@ -56,45 +56,6 @@ def get_formatted_datetime():
 def atualizar_rodape():
     global page
     # global label_dev
-
-    rodape = ft.Container(
-        padding=ft.Padding(50, 50, 50, 50),  # Padding de 50 pixels em todos os lados
-        # content=ft.Card(
-        #     ft.Container(
-        #         padding=ft.Padding(10, 10, 10, 10),  # Padding de 50 pixels em todos os lados
-        #         content=ft.Column(
-        #             [
-        #                 ft.ResponsiveRow(
-        #                     [
-        #                         ft.ListTile(
-        #                             # leading=ft.Icon(ft.icons.ALBUM),
-        #                             title=ft.Text("Aviso:"),
-        #                             subtitle=ft.Text(
-        #                                 "Utilize apenas como recurso auxiliar.\nEste aplicativo consulta a pauta de audiências do site da JFPR.\nCaso não tenha sido atualizada pela respectiva circunscrição ou não tenha sido lançada com os termos 'custódia', não encontrará resultado.",
-        #                                 size=10
-        #                             ),
-        #                         ),
-        #                         ft.Row(
-        #                             [ft.Text("feliped@mpf.mp.br", size=9)],
-        #                             alignment=ft.MainAxisAlignment.END,
-        #                         ),
-        #                     ]
-        #                 ),
-        #             ],
-        #         )
-        #     )
-        # )
-    )
-
-
-
-    if hasattr(page, 'rodape'):
-        if page.rodape in page.controls:
-            page.controls.remove(page.rodape)
-    
-    page.rodape = rodape
-    page.controls.append(page.rodape)
-    page.update()
    
 ultima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
 proxima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
@@ -175,6 +136,12 @@ def atualizar_resultados(resultados):
     if resultados != resultados_anteriores:
         snack_bar = ft.SnackBar(ft.Text("Nova(s) custódia(s) localizada(s)!"), open=True, show_close_icon=True, duration=interval*1000-5000)
         page.overlay.append(snack_bar)
+        
+        # Maximiza a janela
+        page.window.maximized = True  
+        windowSize(page)
+        # Coloca a janela em primeiro plano
+        page.window.to_front()
         
     # Atualizar os resultados anteriores
     resultados_anteriores = resultados.copy()
@@ -304,6 +271,8 @@ def clear_and_send_keys(element, value):
 def executar_consulta(page):
     global driver, executado, mensagem_nenhum_resultado, resultados_anteriores
     
+    print("Consulta Iniciada...")
+
     driver = initialize_webdriver()
     if not driver:
         return  # Exit if driver initialization fails
@@ -420,7 +389,7 @@ def executar_consulta(page):
         # Mantem Deabilitado ou Reabilita o botão no final da execução da consulta
         start_button.disabled = True 
         start_button.update()
-       
+
         if spinner_label:
             spinner_label.value = ""
             executado = True
@@ -430,6 +399,7 @@ def executar_consulta(page):
             driver.quit()
         if not termino_event.is_set():
             agendar_proxima_consulta()
+        print("Executada consulta")
 
 
 start_button = ft.ElevatedButton(
@@ -444,14 +414,18 @@ def iniciar_consulta(page, button):
     start_button.update()
     executar_consulta(page)
 
-def main(pg: ft.Page):
-    global entry_data_inicio, entry_data_fim, spinner_label, text_area, varas_federais, varas_selecionadas, page, ultima_consulta, proxima_consulta 
-    # selected_varas_list
-    page = pg
+def windowSize(page):
     page.window.min_width = 1000
     page.window.width = 1000
     page.window.height = 1000
     page.window.min_height = 500
+
+def main(pg: ft.Page):
+    global entry_data_inicio, entry_data_fim, spinner_label, text_area, varas_federais, varas_selecionadas, page, ultima_consulta, proxima_consulta 
+    # selected_varas_list
+    page = pg
+    windowSize(page)
+
     page.title = f"Pesquisa automatizada - Circunscrições da JF do Paraná - Versão {VERSION}"
     
     page.vertical_alignment = ft.MainAxisAlignment.START
@@ -497,31 +471,7 @@ def main(pg: ft.Page):
         VarasFederais.VARA_CURITIBA_23.value, #
     ]
 
-    varas_selecionadas = varas_selecionadas_iniciais.copy()
-
-    # def add_varas(e):
-    #     """Adiciona uma vara selecionada à lista de varas selecionadas.
-        
-    #     Args:
-    #         e: Evento gerado pela mudança no dropdown.
-    #     """
-    #     if varas_dropdown.value:
-    #         if varas_dropdown.value not in varas_selecionadas:
-    #             # Adiciona a vara e atualiza a interface
-    #             varas_selecionadas.append(varas_dropdown.value)
-    #             # update_varas_selecionadas()
-    #             update_dropdown_options()
-    #             page.update()
-    #         else:
-    #             # Alerta o usuário de que a vara já está selecionada
-    #             print("A vara já está selecionada!")
-
-    # def remove_varas(varas):
-    #     if varas in varas_selecionadas:
-    #         varas_selecionadas.remove(varas)
-    #         # update_varas_selecionadas()
-    #         update_dropdown_options()
-    #         page.update()
+    varas_selecionadas = varas_selecionadas_iniciais.copy()    
 
     def update_varas_selecionadas():
         varas_items = [
@@ -566,24 +516,7 @@ def main(pg: ft.Page):
             )
         ]
         # Atualiza a página para refletir as mudanças
-        page.update()
-
-    # def update_dropdown_options():
-    #     varas_dropdown.options = [
-    #         ft.dropdown.Option(varas)
-    #         for varas in varas_federais if varas not in varas_selecionadas
-    #     ]
-    #     page.update()
-
-    # varas_dropdown = ft.Dropdown(
-    #     text_size=10,
-    #     options=[ft.dropdown.Option(varas) for varas in varas_federais],
-    #     on_change=add_varas,
-    #     label="Adicionar outras localidades para pesquisa",
-    #     label_style=text_style,
-    #     width=640,
-    #     border_radius=5,
-    # )
+        page.update()    
     
     #Initialize selected_varas_list
     selected_varas_list = ft.ResponsiveRow(
@@ -642,11 +575,7 @@ def main(pg: ft.Page):
                                 ft.Container(
                                     content=entry_data_fim,
                                     col={"sm": 2, "md": 2, "lg": 2, "xl": 2},  # Campos de data menores
-                                ),
-                                # ft.Container(
-                                #     content=varas_dropdown,
-                                #     col={"sm": 8, "md": 8, "lg": 8, "xl": 8},
-                                # ),
+                                )
                             ],
                             alignment=ft.MainAxisAlignment.START,
                             spacing=10,
@@ -689,7 +618,6 @@ def main(pg: ft.Page):
     page.update()
     update_varas_selecionadas()
     atualizar_rodape()  # Atualiza a nota de rodapé
-
 
 if __name__ == "__main__":
     ft.app(target=main)
