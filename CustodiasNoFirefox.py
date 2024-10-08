@@ -12,20 +12,10 @@ from VarasFederais import VarasFederais
 from bs4 import BeautifulSoup
 import datetime
 import pyperclip
-import subprocess
-
-def obter_versao_git():
-    try:
-        # Executa o comando git para obter a versão
-        resultado = subprocess.check_output(["git", "describe", "--tags"], stderr=subprocess.STDOUT)
-        return resultado.decode("utf-8").strip()  # Decodifica e remove espaços em branco
-    except subprocess.CalledProcessError:
-        return "v0.0.0"  # Valor padrão se não conseguir obter a versão
-
 
 # Defina a data de validade
 data_validade = datetime.datetime(2024, 12, 8)  # Defina sua data de validade aqui
-VERSION = obter_versao_git()
+VERSION = "1.6"
 
 # Variável global para o driver Selenium
 driver = None
