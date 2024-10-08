@@ -39,15 +39,6 @@ def get_formatted_datetime():
     #return now.strftime("%d/%m/%Y %H:%M:%S")
     return now.strftime("%H:%M:%S")
 
-# Chame essa função após driver.quit()
-# def close_specific_chrome_process(pid):
-#     try:
-#         p = psutil.Process(pid)
-#         p.terminate()
-#     except Exception as e:
-#         print(f"Erro ao fechar o processo: {e}")
-
-
 def atualizar_rodape():
     global page
     # global label_dev
@@ -226,9 +217,6 @@ def atualizar_pagina(rows):
         atualizar_rodape()  # Atualiza a nota de rodapé
         page.update()
 
-
-
-
 def get_text_width(text, font_size):
     average_char_width = 7
     return len(text) * average_char_width
@@ -237,6 +225,35 @@ def agendar_proxima_consulta():
     next_run = datetime.datetime.now() + datetime.timedelta(seconds=interval)  # Ajusta para 10 segundos
     delay = (next_run - datetime.datetime.now()).total_seconds()
     threading.Timer(delay, lambda: executar_consulta(page)).start()
+
+# Função para verificar e encerrar processos do Firefox
+def finalizar_processos_firefox():
+    firefox_processes = []
+    
+    # Verifica todos os processos em execução
+    for proc in psutil.process_iter(['pid', 'name']):
+        try:
+            # Verifica se o processo tem "firefox" no nome
+            if 'firefox' in proc.info['name'].lower():
+                firefox_processes.append(proc)
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+
+    # Encerra os processos encontrados
+    for proc in firefox_processes:
+        try:
+            proc.terminate()  # Tenta encerrar o processo educadamente
+            time.sleep(3)  # Espera um pouco para ver se o processo encerra
+            if proc.is_running():
+                print(f"Processo ainda em execução, forçando encerramento: {proc.pid}")
+                proc.kill()  # Força o encerramento do processo se não encerrar
+                print(f"Processo encerrado forçadamente: {proc.pid}")
+            else:
+                print(f"Processo encerrado: {proc.pid}")
+        except psutil.NoSuchProcess:
+            print(f"Processo do Firefox já encerrado: {proc.pid}")
+        except Exception as e:
+            print(f"Erro ao tentar encerrar o processo: {e}")
 
 def finalizar_driver():
     """Finaliza o WebDriver e seus processos associados."""
@@ -257,10 +274,11 @@ def finalizar_driver():
         except Exception as e:
             print(f"Erro ao tentar encerrar o processo: {e}")
 
+# Função chamada ao fechar o programa
 def on_close(e):
     """Evento chamado ao fechar a janela."""
-    finalizar_driver()
-    running_event.clear()  # Limpa o evento de execução
+    finalizar_driver()  # Função para finalizar o WebDriver
+    finalizar_processos_firefox()  # Função para encerrar os processos do Firefox
     print("Janela fechada. Programa encerrado.")
 
 def initialize_webdriver():    
