@@ -22,16 +22,19 @@ driver_pid = None
 running_event = threading.Event()
 termino_event = threading.Event()
 executado = False
-interval = 600
+interval = 900
 resultados_anteriores = []
 
 termos_buscados = ["custódia", "custodia"]
    
-ultima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
-proxima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
+ultima_consulta = ft.Text(f"", size=11, color=ft.colors.GREY_600)
+proxima_consulta = ft.Text(f"", size=11, color=ft.colors.GREY_600)
 
 # Define o estilo do texto dos itens do dropdown
-text_style = ft.TextStyle(size=11)
+text_style = ft.TextStyle(
+    color=ft.colors.BLACK,  # Define a cor do texto como preto
+    size=11,  # Tamanho da fonte ajustado
+)
 sizeFontRows = 10
 
 # Definição das datas padrão
@@ -51,7 +54,8 @@ entry_data_inicio = ft.TextField(
     value=data_inicio_default,
     width=102,
     text_style=text_style,  # Tamanho da fonte ajustado para 10
-    read_only=True  # BLOQUEIO DA EDIÇÃO DE DATA - Campo somente leitura
+    read_only=True,  # BLOQUEIO DA EDIÇÃO DE DATA - Campo somente leitura
+    disabled=True  # Torna o campo não clicável
 )
 entry_data_fim = ft.TextField(
     label="Data Fim",
@@ -59,7 +63,8 @@ entry_data_fim = ft.TextField(
     value=data_fim_default,
     width=102,
     text_style=text_style,  # Tamanho da fonte ajustado para 10
-    read_only=True  # BLOQUEIO DA EDIÇÃO DE DATA - Campo somente leitura
+    read_only=True,  # BLOQUEIO DA EDIÇÃO DE DATA - Campo somente leitura
+    disabled=True,  # Torna o campo não clicável
 )
 # start_button = ft.ElevatedButton(
 #     text="Iniciar Consulta",
@@ -79,6 +84,16 @@ start_button = ft.CupertinoFilledButton(
     opacity_on_click=0.5,
     on_click=lambda e: iniciar_consulta(page, start_button),  # Passa o botão para a função
 )
+
+def converter_data(data_str):
+    if isinstance(data_str, datetime.datetime):
+        return data_str.strftime("%d/%m/%Y")
+    try:
+        data_obj = datetime.datetime.strptime(data_str, "%Y-%m-%d %H:%M:%S")
+        return data_obj.strftime("%d/%m/%Y")
+    except ValueError as e:
+        print(f"Erro ao converter a data: {e}")
+        return None
 
 def verificar_validade():
     return datetime.datetime.now() <= data_validade
@@ -196,7 +211,7 @@ def atualizar_pagina(rows):
                 content=ft.Column(
                     controls=[data_table],
                     scroll=ft.ScrollMode.ALWAYS,
-                    height=600,
+                    height=650,
                 ),
                 padding=ft.Padding(50, 0, 50, 35),  # Padding de 50 pixels em todos os lados
             )
@@ -296,7 +311,7 @@ def main(pg: ft.Page):
     page.on_close = on_close  
     windowSize(page)
 
-    page.title = f"Pesquisa automatizada - Circunscrições da JF do Paraná - Versão {VERSION}"
+    page.title = f"Pesquisa custódias JFPR - Versão {VERSION} - Valido até {converter_data(data_validade)}"
     
     page.vertical_alignment = ft.MainAxisAlignment.START
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
@@ -357,6 +372,15 @@ def main(pg: ft.Page):
                     ),
                     # Divisor abaixo do conteúdo
                     ft.Divider(),
+                    ft.Container(
+                        content=ft.Text(
+                            "Resultados",
+                            size=18,
+                            weight="bold"
+                        ),
+                        alignment=ft.Alignment(0, 0),  # Centralizado horizontalmente
+                        padding=ft.Padding(0, 0, 20, 0)  # Espaço abaixo do título
+                    ),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,  # Centraliza a coluna inteira
                 spacing=20,  # Espaço entre o título e o conteúdo
@@ -405,16 +429,15 @@ def iniciar_consulta(page, button):
 
 
 def windowSize(page):
-    page.window.min_width = 1000
-    page.window.width = 1000
-    page.window.height = 1000
+    page.window.min_width = 1200
     page.window.min_height = 500
+    page.window.maximized = True # Maximiza a janela
 
 
 def executar_consulta(page):
     global driver, driver_pid, executado, mensagem_nenhum_resultado, resultados_anteriores
-    print("Consulta Iniciada...")
-    spinner_label.value = f"Consulta Iniciada..."
+    
+    print("inicializando webdriver...")
 
     driver = initialize_webdriver()
     if not driver:
@@ -446,7 +469,6 @@ def executar_consulta(page):
         dropdown_button = consultar_por.find_element(By.CLASS_NAME, "dropdown-toggle")
         dropdown_button.click()
 
-        # Aguarde a lista de opções ser exibida
         options = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".dropdown-menu .dropdown-item")))
 
         for option in options:
@@ -457,12 +479,8 @@ def executar_consulta(page):
 
 
         data_inicio = entry_data_inicio.value.strip()
+        data_inicio = "06/10/2024"
         data_fim = entry_data_fim.value.strip()
-
-        print(f"Data de início: {data_inicio}, Data de fim: {data_fim}")
-
-        spinner_label.value = f"Preenchendo datas..."
-        page.update()
 
         campo_data_inicio = wait.until(EC.presence_of_element_located((By.ID, "txtDataInicio")))
         driver.execute_script("arguments[0].scrollIntoView(true);", campo_data_inicio)
@@ -476,21 +494,14 @@ def executar_consulta(page):
         botao_consultar = wait.until(EC.element_to_be_clickable((By.ID, "btnConsultar")))
         botao_consultar.click()
 
-        spinner_label.value = f"Buscando pauta..."
-        page.update()
-
         # Verificar se há a mensagem de "Nenhum resultado encontrado"
         mensagem_erro = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
         if "Nenhum resultado encontrado" in mensagem_erro.text:
             print(f"Nenhum resultado encontrado.")
-            
 
         # Esperar até que a tabela esteja presente
         tabela = wait.until(EC.presence_of_element_located((By.ID, "tblAudienciasEproc")))
         linhas = tabela.find_elements(By.TAG_NAME, "tr")
-
-        spinner_label.value = f"Fazendo varredura por termos: {termos_buscados}"
-        page.update()
 
         for linha in linhas:
             texto_normalizado = linha.text.lower()
@@ -516,12 +527,13 @@ def executar_consulta(page):
         atualizar_resultados(resultados)
 
     except Exception as e:
+        spinner_label.value = f"Erro: {e}"
+        page.update()
         print(f"Erro geral: {e}")
         resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se houver um erro geral
         atualizar_resultados(resultados)
         return
-
-        
+ 
     finally:        
         start_button.disabled = True
         start_button.update()
@@ -541,8 +553,6 @@ def executar_consulta(page):
         if not termino_event.is_set():
             agendar_proxima_consulta()
         print("Consulta finalizada")
-
-
 
 if __name__ == "__main__":
     ft.app(target=main)
