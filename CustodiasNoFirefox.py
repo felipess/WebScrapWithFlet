@@ -32,7 +32,7 @@ proxima_consulta = ft.Text(f"", size=11, color=ft.colors.GREY_600)
 
 # Define o estilo do texto dos itens do dropdown
 text_style = ft.TextStyle(
-    color=ft.colors.BLACK,  # Define a cor do texto como preto
+    color=ft.colors.GREY_600,  # Define a cor do texto como preto
     size=11,  # Tamanho da fonte ajustado
 )
 sizeFontRows = 10
