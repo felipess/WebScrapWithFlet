@@ -24,6 +24,8 @@ termino_event = threading.Event()
 executado = False
 interval = 600
 resultados_anteriores = []
+
+termos_buscados = ["custódia", "custodia"]
    
 ultima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
 proxima_consulta = ft.Text(f"", size=10, color=ft.colors.GREY)
@@ -59,26 +61,32 @@ entry_data_fim = ft.TextField(
     text_style=text_style,  # Tamanho da fonte ajustado para 10
     read_only=True  # BLOQUEIO DA EDIÇÃO DE DATA - Campo somente leitura
 )
-start_button = ft.ElevatedButton(
-    text="Iniciar Consulta",
-    icon=ft.icons.PLAY_ARROW,
-    on_click=lambda e: iniciar_consulta(page, start_button)  # Passa o botão para a função
+# start_button = ft.ElevatedButton(
+#     text="Iniciar Consulta",
+#     icon=ft.icons.PLAY_ARROW,
+#     on_click=lambda e: iniciar_consulta(page, start_button)  # Passa o botão para a função
+# )
+
+# Definição do botão
+start_button = ft.CupertinoFilledButton(
+    content=ft.Row(  # Manter o conteúdo como um Row para permitir atualização
+        controls=[
+            ft.Icon(ft.icons.PLAY_ARROW, size=16),  # Ícone inicial
+            ft.Text(" Iniciar Consulta", size=12),  # Texto inicial
+        ],
+        alignment=ft.MainAxisAlignment.CENTER  # Centraliza o conteúdo
+    ),
+    opacity_on_click=0.5,
+    on_click=lambda e: iniciar_consulta(page, start_button),  # Passa o botão para a função
 )
 
 def verificar_validade():
-    if datetime.datetime.now() > data_validade:        
-        return False
-    return True
+    return datetime.datetime.now() <= data_validade
 
 def get_formatted_datetime():
-    now = datetime.datetime.now()
-    return now.strftime("%H:%M:%S")
-
-def atualizar_rodape():
-    global page
+    return datetime.datetime.now().strftime("%H:%M:%S")
 
 def copiar_linha(conteudo_linha):
-    """Função para copiar o conteúdo da linha para a área de transferência."""
     conteudo_ordenado = [conteudo_linha[i] for i in ordem_colunas]
 
     if len(conteudo_ordenado) > 0:  # Verifica se a coluna 0 existe
@@ -99,7 +107,6 @@ def copiar_linha(conteudo_linha):
     # Remove "Evento:" do texto, se presente
     texto = texto.replace("Evento:", "").strip()
     
-
     # Remove "Sala:" e tudo que vem depois
     if "Sala:" in texto:
         texto = texto.split("- Sala:")[0].strip()
@@ -109,23 +116,17 @@ def copiar_linha(conteudo_linha):
 def atualizar_resultados(resultados):
     global page, mensagem_nenhum_resultado, resultados_anteriores
 
-    # Comparar os novos resultados com os anteriores
     if resultados != resultados_anteriores:
         snack_bar = ft.SnackBar(ft.Text("Nova(s) custódia(s) localizada(s)!"), open=True, show_close_icon=True, duration=interval*1000-5000)
         page.overlay.append(snack_bar)
-        
-        # Maximiza a janela
-        page.window.maximized = True  
-        windowSize(page)
-        # Coloca a janela em primeiro plano
-        page.window.to_front()
-        
-    # Atualizar os resultados anteriores
-    resultados_anteriores = resultados.copy()
+        page.window.maximized = True # Maximiza a janela
+        # windowSize(page)
+        page.window.to_front() # Coloca a janela em primeiro plano
+
+    resultados_anteriores = resultados.copy() # Atualizar os resultados anteriores
     
     if page:
-        # Atualizar os labels de data/hora
-        ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}"
+        ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}" 
         proxima_consulta.value = f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=interval):%H:%M:%S}"
 
         # Preparar a tabela com resultados
@@ -147,9 +148,8 @@ def atualizar_resultados(resultados):
                     )
                 ),
             ]
+            
             rows.append(ft.DataRow(cells=row_cells))
-
-        # Atualizar a página com base na variável
         atualizar_pagina(rows)
 
 def atualizar_pagina(rows):
@@ -187,7 +187,8 @@ def atualizar_pagina(rows):
                 rows=rows,
                 data_row_min_height=60,
                 data_row_max_height=80,
-                column_spacing=20,
+                width="100%",  # Ajuste a largura da tabela aqui
+                # column_spacing=20,
             )
 
             # Coloque o DataTable dentro de um Container
@@ -201,11 +202,7 @@ def atualizar_pagina(rows):
             )
 
             page.data_table_container = data_table_container
-
-            # Adicione o contêiner à página
             page.controls.append(page.data_table_container)
-
-        atualizar_rodape()  # Atualiza a nota de rodapé
         page.update()
 
 def get_text_width(text, font_size):
@@ -250,9 +247,7 @@ def finalizar_processos():
                 print(f"Processo {process_name} já encerrado: {proc.pid}")
             except Exception as e:
                 print(f"Erro ao tentar encerrar o processo {process_name}: {e}")
-    # Encerra os processos do Firefox
     encerrar_processos(firefox_processes, "Firefox")
-    # Encerra os processos do Geckodriver
     encerrar_processos(geckodriver_processes, "Geckodriver")
 
 def finalizar_driver():
@@ -295,6 +290,86 @@ def on_close(e):
     finalizar_app_processos()
     print("Janela fechada. Programa encerrado.")
 
+def main(pg: ft.Page):
+    global driver, driver_pid, entry_data_inicio, entry_data_fim, spinner_label, page, ultima_consulta, proxima_consulta 
+    page = pg
+    page.on_close = on_close  
+    windowSize(page)
+
+    page.title = f"Pesquisa automatizada - Circunscrições da JF do Paraná - Versão {VERSION}"
+    
+    page.vertical_alignment = ft.MainAxisAlignment.START
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+
+    if not verificar_validade():
+        pg.add(ft.Text("Este programa não é mais válido - permissão expirada. Entre em contato com o desenvolvedor feliped@mpf.mp.br pelo Zoom."))
+        pg.update()
+        return      
+
+    spinner_label = ft.Text("", size=10, color=ft.colors.BLUE_500)
+    page.update()
+
+
+    page.add(
+        ft.Container(
+            padding=ft.Padding(5, 20, 5, 20),  # Padding ajustado
+            content=ft.Column(
+                controls=[
+                    # Título no topo
+                    ft.Container(
+                        content=ft.Text(
+                            "Consulta de audiências de custódia",
+                            size=20,
+                            weight="bold"
+                        ),
+                        alignment=ft.Alignment(0, 0),  # Centralizado horizontalmente
+                        padding=ft.Padding(0, 0, 20, 0)  # Espaço abaixo do título
+                    ),
+                    # Row para todo o conteúdo centralizado
+                    ft.Row(
+                        controls=[
+                            # Campo de Data Início
+                            ft.Container(
+                                content=entry_data_inicio,
+                                col={"sm": 2, "md": 2, "lg": 2, "xl": 2},
+                            ),
+                            # Campo de Data Fim
+                            ft.Container(
+                                content=entry_data_fim,
+                                col={"sm": 2, "md": 2, "lg": 2, "xl": 2},
+                            ),
+                            # Botão Start
+                            start_button,
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,  # Centraliza horizontalmente
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,  # Centraliza verticalmente
+                        spacing=10,  # Espaçamento entre os itens
+                    ),                    
+                    ft.Container(
+                        content=ft.Row(
+                            controls=[
+                                spinner_label,
+                                ultima_consulta,
+                                proxima_consulta,
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER,
+                        )
+                    ),
+                    # Divisor abaixo do conteúdo
+                    ft.Divider(),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,  # Centraliza a coluna inteira
+                spacing=20,  # Espaço entre o título e o conteúdo
+            )
+        )
+    )
+
+
+
+
+
+    page.update()
+
 def initialize_webdriver():    
     global driver_pid
     """Initialize the Selenium WebDriver with necessary options."""
@@ -322,11 +397,12 @@ def clear_and_send_keys(element, value):
 
 def iniciar_consulta(page, button):
     start_button.disabled = True # Desabilita o botão para evitar cliques duplicados
-    button.text = "Em execução..."  # Muda o texto do botão
-    start_button.update()
+    button.content.controls[1] = ft.Text(" Em execução...", size=12, color=ft.colors.GREY)  # Atualiza apenas o texto
+    button.update()  # Atualiza o botão para refletir a mudança
     spinner_label.value = f"Pesquisa iniciada..."
     page.update()
     executar_consulta(page)
+
 
 def windowSize(page):
     page.window.min_width = 1000
@@ -338,6 +414,7 @@ def windowSize(page):
 def executar_consulta(page):
     global driver, driver_pid, executado, mensagem_nenhum_resultado, resultados_anteriores
     print("Consulta Iniciada...")
+    spinner_label.value = f"Consulta Iniciada..."
 
     driver = initialize_webdriver()
     if not driver:
@@ -352,18 +429,22 @@ def executar_consulta(page):
     try:
         resultados = []
         titulos = ["Data/Hora", "Autos", "Classe", "Processo", "Parte", "Status", "Sistema"]
+
+        spinner_label.value = f"Navegando para o site da JFPR..."
+        page.update()
         
         driver.get("https://eproc.jfpr.jus.br/eprocV2/externo_controlador.php?acao=pauta_audiencias")
 
         time.sleep(1)
-        
+       
         wait = WebDriverWait(driver, 30)
         consultar_por = wait.until(EC.presence_of_element_located((By.ID, "divColConsultarPor")))
-        time.sleep(1)
+
+        spinner_label.value = f"Preenchendo campos automaticamente..."
+        page.update()
 
         dropdown_button = consultar_por.find_element(By.CLASS_NAME, "dropdown-toggle")
         dropdown_button.click()
-        time.sleep(1)
 
         # Aguarde a lista de opções ser exibida
         options = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".dropdown-menu .dropdown-item")))
@@ -374,32 +455,29 @@ def executar_consulta(page):
                 print("Consultando por Intervalo de Data e Competência")
                 break
 
-        time.sleep(1)
 
         data_inicio = entry_data_inicio.value.strip()
         data_fim = entry_data_fim.value.strip()
 
         print(f"Data de início: {data_inicio}, Data de fim: {data_fim}")
 
+        spinner_label.value = f"Preenchendo datas..."
+        page.update()
+
         campo_data_inicio = wait.until(EC.presence_of_element_located((By.ID, "txtDataInicio")))
         driver.execute_script("arguments[0].scrollIntoView(true);", campo_data_inicio)
-        time.sleep(1)  # Adicione um pequeno atraso, se necessário
         campo_data_inicio.clear()
         campo_data_inicio.send_keys(data_inicio)
-
-        time.sleep(1)
 
         campo_data_fim = wait.until(EC.presence_of_element_located((By.ID, "txtDataTermino")))
         campo_data_fim.clear()
         campo_data_fim.send_keys(data_fim)
-
-        time.sleep(1)
         
         botao_consultar = wait.until(EC.element_to_be_clickable((By.ID, "btnConsultar")))
         botao_consultar.click()
 
-        time.sleep(2)
-
+        spinner_label.value = f"Buscando pauta..."
+        page.update()
 
         # Verificar se há a mensagem de "Nenhum resultado encontrado"
         mensagem_erro = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
@@ -411,9 +489,12 @@ def executar_consulta(page):
         tabela = wait.until(EC.presence_of_element_located((By.ID, "tblAudienciasEproc")))
         linhas = tabela.find_elements(By.TAG_NAME, "tr")
 
+        spinner_label.value = f"Fazendo varredura por termos: {termos_buscados}"
+        page.update()
+
         for linha in linhas:
             texto_normalizado = linha.text.lower()
-            if any(termo in texto_normalizado for termo in ["custódia", "custodia"]):
+            if any(termo in texto_normalizado for termo in termos_buscados):
                 tds = linha.find_elements(By.TAG_NAME, "td")
                 conteudo_linha = []
                 erro_encontrado = False
@@ -433,13 +514,11 @@ def executar_consulta(page):
             mensagem_nenhum_resultado = "Nenhum resultado encontrado."
 
         atualizar_resultados(resultados)
-        atualizar_rodape()       
 
     except Exception as e:
         print(f"Erro geral: {e}")
         resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se houver um erro geral
         atualizar_resultados(resultados)
-        atualizar_rodape()  
         return
 
         
@@ -463,92 +542,7 @@ def executar_consulta(page):
             agendar_proxima_consulta()
         print("Consulta finalizada")
 
-def main(pg: ft.Page):
-    global driver, driver_pid, entry_data_inicio, entry_data_fim, spinner_label, page, ultima_consulta, proxima_consulta 
-    # text_area
-    page = pg
-    page.on_close = on_close  
-    windowSize(page)
 
-    page.title = f"Pesquisa automatizada - Circunscrições da JF do Paraná - Versão {VERSION}"
-    
-    page.vertical_alignment = ft.MainAxisAlignment.START
-    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-
-    if not verificar_validade():
-        pg.add(ft.Text("Este programa não é mais válido - permissão expirada. Entre em contato com o desenvolvedor feliped@mpf.mp.br pelo Zoom."))
-        pg.update()
-        return      
-
-    spinner_label = ft.Text("", size=10, color=ft.colors.BLUE_500)
-    page.update()
-
-
-    page.add(
-        ft.Container(
-            padding=ft.Padding(50, 50, 50, 50),  # Padding de 50 pixels em todos os lados
-            content=ft.Column(
-                controls=[
-                    ft.Container(
-                        content=ft.Text(
-                            "Consulta de audiências de custódia",
-                            size=20,
-                            weight="bold"
-                        ),
-                        alignment=ft.Alignment(0, 0.5),
-                        padding=ft.Padding(0, 0, 0, 20)
-                    ),
-                    ft.Container(
-                        content=ft.ResponsiveRow(
-                            controls=[
-                                ft.Container(
-                                    content=entry_data_inicio,
-                                    col={"sm": 2, "md": 2, "lg": 2, "xl": 2},  # Campos de data menores
-                                ),
-                                ft.Container(
-                                    content=entry_data_fim,
-                                    col={"sm": 2, "md": 2, "lg": 2, "xl": 2},  # Campos de data menores
-                                )
-                            ],
-                            alignment=ft.MainAxisAlignment.START,
-                            spacing=10,
-                        ),
-                        padding=ft.Padding(0, 0, 0, 0)
-                    ),
-                    ft.Container(
-                        padding=ft.Padding(0, 0, 0, 0)
-                    ),
-                    ft.Container(
-                        content=ft.Row(
-                            controls=[spinner_label],
-                            alignment=ft.MainAxisAlignment.CENTER
-                        ),
-                        padding=ft.Padding(0, 0, 0, 0)
-                    ),
-                    ft.Container(
-                        content=ft.Row(
-                            controls=[
-                                ultima_consulta,
-                                proxima_consulta,
-                            ],
-                            alignment=ft.MainAxisAlignment.CENTER
-                        ),
-                        padding=ft.Padding(0, 0, 0, 0)
-                    ),
-                    ft.Container(
-                        content=ft.Row(
-                            controls=[start_button],
-                            alignment=ft.MainAxisAlignment.CENTER
-                        ),
-                        padding=ft.Padding(0, 0, 0, 20)  # Ajuste o padding conforme necessário
-                    ),
-                ]
-            )
-        )
-    )
-
-    page.update()
-    atualizar_rodape()  # Atualiza a nota de rodapé
 
 if __name__ == "__main__":
     ft.app(target=main)
