@@ -16,7 +16,7 @@ import psutil
 data_validade = datetime.datetime(2024, 12, 8)  # Defina sua data de validade aqui
 
 # Variáveis globais
-VERSION = "3.0"
+VERSION = "4.0"
 driver = None
 driver_pid = None
 running_event = threading.Event()
@@ -388,17 +388,13 @@ def main(pg: ft.Page):
         )
     )
 
-
-
-
-
     page.update()
 
 def initialize_webdriver():    
     global driver_pid
     """Initialize the Selenium WebDriver with necessary options."""
     options = Options()
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--width=1080")  # Define a largura
@@ -479,7 +475,6 @@ def executar_consulta(page):
 
 
         data_inicio = entry_data_inicio.value.strip()
-        data_inicio = "06/10/2024"
         data_fim = entry_data_fim.value.strip()
 
         campo_data_inicio = wait.until(EC.presence_of_element_located((By.ID, "txtDataInicio")))

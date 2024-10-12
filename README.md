@@ -11,7 +11,7 @@ PS C:\repos\Github\WebScrapWithFlet> flet run .\test_flet.py
 py -m PyInstaller --onefile --windowed .\CustodiasJFPR2.py
 
 # para ja renomear o exe na saida
-py -m PyInstaller --onefile --windowed --name CustodiasApp_v1.5 .\CustodiasNoFirefox.py
+py -m PyInstaller --onefile --windowed --name CustodiasApp .\CustodiasNoFirefox.py
 
 
 # ficara dentro da pasta dist
