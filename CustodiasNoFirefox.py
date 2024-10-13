@@ -224,8 +224,8 @@ def agendar_proxima_consulta(page):
 # Encerrar Firefox e Geckodriver
 def finalizar_processos():
     # Obtém todos os processos do Firefox e GeckoDriver
-    firefox_processes = [p for p in psutil.process_iter(['name']) if p.info['name'] == 'firefox.exe']
-    geckodriver_processes = [p for p in psutil.process_iter(['name']) if p.info['name'] == 'geckodriver.exe']
+    firefox_processes = [p for p in psutil.process_iter(['name']) if 'firefox' in p.info['name'].lower()]
+    geckodriver_processes = [p for p in psutil.process_iter(['name']) if 'geckodriver' in p.info['name'].lower()]
 
     # Encerra os processos do Firefox individualmente
     for proc in firefox_processes:
