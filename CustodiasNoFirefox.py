@@ -12,11 +12,10 @@ import datetime
 import pyperclip
 import psutil
 
-# Defina a data de validade
 data_validade = datetime.datetime(2024, 12, 8)  # Defina sua data de validade aqui
 
 # Variáveis globais
-VERSION = "4.0"
+VERSION = "4.1"
 driver = None
 driver_pid = None
 running_event = threading.Event()
@@ -30,10 +29,9 @@ termos_buscados = ["custódia", "custodia"]
 ultima_consulta = ft.Text(f"", size=11, color=ft.colors.GREY_600)
 proxima_consulta = ft.Text(f"", size=11, color=ft.colors.GREY_600)
 
-# Define o estilo do texto dos itens do dropdown
 text_style = ft.TextStyle(
-    color=ft.colors.GREY_600,  # Define a cor do texto como preto
-    size=11,  # Tamanho da fonte ajustado
+    color=ft.colors.GREY_600,  
+    size=11,  
 )
 sizeFontRows = 10
 
@@ -42,10 +40,8 @@ hoje = datetime.datetime.now()
 data_inicio_default = hoje.strftime("%d/%m/%Y")  # Data de hoje
 data_fim_default = (hoje + datetime.timedelta(days=1)).strftime("%d/%m/%Y")  # Data de amanhã
 
-# Variável global para armazenar a mensagem de nenhum resultado
 mensagem_nenhum_resultado = None
 
-# Defina a ordem desejada das colunas
 ordem_colunas = [4, 1, 2, 0, 3]  # Ordem original, pode ser ajustada conforme necessário
 
 entry_data_inicio = ft.TextField(
@@ -53,8 +49,8 @@ entry_data_inicio = ft.TextField(
     label_style=text_style,
     value=data_inicio_default,
     width=102,
-    text_style=text_style,  # Tamanho da fonte ajustado para 10
-    read_only=True,  # BLOQUEIO DA EDIÇÃO DE DATA - Campo somente leitura
+    text_style=text_style, 
+    read_only=True,  # BLOQUEIO DA EDIÇÃO DE DATA 
     disabled=True  # Torna o campo não clicável
 )
 entry_data_fim = ft.TextField(
@@ -63,26 +59,21 @@ entry_data_fim = ft.TextField(
     value=data_fim_default,
     width=102,
     text_style=text_style,  # Tamanho da fonte ajustado para 10
-    read_only=True,  # BLOQUEIO DA EDIÇÃO DE DATA - Campo somente leitura
+    read_only=True,  # BLOQUEIO DA EDIÇÃO DE DATA 
     disabled=True,  # Torna o campo não clicável
 )
-# start_button = ft.ElevatedButton(
-#     text="Iniciar Consulta",
-#     icon=ft.icons.PLAY_ARROW,
-#     on_click=lambda e: iniciar_consulta(page, start_button)  # Passa o botão para a função
-# )
 
 # Definição do botão
 start_button = ft.CupertinoFilledButton(
-    content=ft.Row(  # Manter o conteúdo como um Row para permitir atualização
+    content=ft.Row(  
         controls=[
-            ft.Icon(ft.icons.PLAY_ARROW, size=16),  # Ícone inicial
-            ft.Text(" Iniciar Consulta", size=12),  # Texto inicial
+            ft.Icon(ft.icons.PLAY_ARROW, size=16),  
+            ft.Text(" Iniciar Consulta", size=12),  
         ],
-        alignment=ft.MainAxisAlignment.CENTER  # Centraliza o conteúdo
+        alignment=ft.MainAxisAlignment.CENTER  
     ),
     opacity_on_click=0.5,
-    on_click=lambda e: iniciar_consulta(page, start_button),  # Passa o botão para a função
+    on_click=lambda e: iniciar_consulta(page, start_button),  
 )
 
 def converter_data(data_str):
@@ -125,7 +116,7 @@ def copiar_linha(conteudo_linha):
     # Remove "Sala:" e tudo que vem depois
     if "Sala:" in texto:
         texto = texto.split("- Sala:")[0].strip()
-    pyperclip.copy(texto)  # Copia o texto para a área de transferência
+    pyperclip.copy(texto)  
     print("Copiado texto: " + texto)
 
 def atualizar_resultados(resultados):
@@ -172,13 +163,13 @@ def atualizar_pagina(rows):
     global mensagem_nenhum_resultado
 
     if page:
-        # Remover a mensagem de "Nenhum resultado encontrado" se estiver presente
+        # Remover a mensagem de "Nenhum resultado encontrado"
         if hasattr(page, 'mensagem_nenhum_resultado'):
             if page.mensagem_nenhum_resultado in page.controls:
                 page.controls.remove(page.mensagem_nenhum_resultado)
                 del page.mensagem_nenhum_resultado        
         
-        #Remover a tabela de resultados, se estiver presente
+        #Remover a tabela de resultados
         if hasattr(page, 'data_table_container') and page.data_table_container in page.controls:
             page.controls.remove(page.data_table_container)
 
@@ -202,8 +193,7 @@ def atualizar_pagina(rows):
                 rows=rows,
                 data_row_min_height=60,
                 data_row_max_height=80,
-                width="100%",  # Ajuste a largura da tabela aqui
-                # column_spacing=20,
+                width="100%",  
             )
 
             # Coloque o DataTable dentro de um Container
@@ -213,7 +203,7 @@ def atualizar_pagina(rows):
                     scroll=ft.ScrollMode.ALWAYS,
                     height=650,
                 ),
-                padding=ft.Padding(50, 0, 50, 35),  # Padding de 50 pixels em todos os lados
+                padding=ft.Padding(50, 0, 50, 35),  
             )
 
             page.data_table_container = data_table_container
@@ -225,84 +215,101 @@ def get_text_width(text, font_size):
     return len(text) * average_char_width
 
 def agendar_proxima_consulta():
-    next_run = datetime.datetime.now() + datetime.timedelta(seconds=interval)  # Ajusta para 10 segundos
+    next_run = datetime.datetime.now() + datetime.timedelta(seconds=interval)  
     delay = (next_run - datetime.datetime.now()).total_seconds()
     threading.Timer(delay, lambda: executar_consulta(page)).start()
 
-# Função para verificar e encerrar processos do Firefox e Geckodriver
+# Encerrar Firefox e Geckodriver
 def finalizar_processos():
     firefox_processes = []
     geckodriver_processes = []
-    
-    # Verifica todos os processos em execução
-    for proc in psutil.process_iter(['pid', 'name']):
+
+    for proc in psutil.process_iter(['pid', 'name', 'exe', 'cmdline']):
         try:
-            # Verifica se o processo tem "firefox" no nome
-            if 'firefox' in proc.info['name'].lower():
+            if 'firefox' in proc.info['name'].lower() or 'firefox' in ' '.join(proc.info['cmdline']).lower():
                 firefox_processes.append(proc)
-            # Verifica se o processo tem "geckodriver" no nome
-            elif 'geckodriver' in proc.info['name'].lower():
+
+            if 'geckodriver' in proc.info['name'].lower() or 'geckodriver' in ' '.join(proc.info['cmdline']).lower():
                 geckodriver_processes.append(proc)
+
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             continue
 
-    # Função para encerrar processos
-    def encerrar_processos(process_list, process_name):
-        for proc in process_list:
-            try:
-                proc.terminate()  # Tenta encerrar o processo educadamente
-                time.sleep(3)  # Espera um pouco para ver se o processo encerra
-                if proc.is_running():
-                    print(f"Processo ainda em execução, forçando encerramento: {proc.pid} ({process_name})")
-                    proc.kill()  # Força o encerramento do processo se não encerrar
-                    print(f"Processo {process_name} encerrado forçadamente: {proc.pid}")
-                else:
-                    print(f"Processo {process_name} encerrado: {proc.pid}")
-            except psutil.NoSuchProcess:
-                print(f"Processo {process_name} já encerrado: {proc.pid}")
-            except Exception as e:
-                print(f"Erro ao tentar encerrar o processo {process_name}: {e}")
-    encerrar_processos(firefox_processes, "Firefox")
-    encerrar_processos(geckodriver_processes, "Geckodriver")
+    # Encerra processos do Firefox
+    for proc in firefox_processes:
+        try:
+            print(f"Encerrando processo Firefox (PID: {proc.pid})...")
+            proc.terminate()  # Enviar sinal de término
+            proc.wait(timeout=5)  # Aguardar encerramento por até 5 segundos
+        except (psutil.NoSuchProcess, psutil.TimeoutExpired):
+            print(f"Erro ao encerrar processo Firefox (PID: {proc.pid}), forçando encerramento.")
+            proc.kill()  # Força o encerramento do processo
+
+    # Encerra processos do Geckodriver
+    for proc in geckodriver_processes:
+        try:
+            print(f"Encerrando processo Geckodriver (PID: {proc.pid})...")
+            proc.terminate()  
+            proc.wait(timeout=5)  
+        except (psutil.NoSuchProcess, psutil.TimeoutExpired):
+            print(f"Erro ao encerrar processo Geckodriver (PID: {proc.pid}), forçando encerramento.")
+            proc.kill() 
+
+    print("Processos finalizados com sucesso.")
+
 
 def finalizar_driver():
-    """Finaliza o WebDriver e seus processos associados."""
     global driver, driver_pid
     if driver:
-        driver.quit()
+        try:
+            print("Encerrando WebDriver...")
+            driver.quit()  # Encerra o WebDriver
+        except Exception as e:
+            print(f"Erro ao encerrar o WebDriver: {e}")
     if driver_pid:
         try:
             proc = psutil.Process(driver_pid)
-            proc.terminate()  # Tenta encerrar o processo "educadamente"
-            time.sleep(3)  # Espera um pouco para ver se o processo encerra
-            if proc.is_running():
-                print(f"Processo ainda em execução, forçando encerramento: {driver_pid}")
-                proc.kill()  # Força o encerramento do processo
-                print(f"Processo encerrado forçadamente: {driver_pid}")
-        except psutil.NoSuchProcess:
-            print(f"Processo do driver já encerrado: {driver_pid}")
+            proc.terminate()  # Enviar sinal para encerrar o processo
+            proc.wait(timeout=5)  # Aguarda até 5 segundos pelo encerramento
+            print(f"Processo WebDriver (PID: {driver_pid}) encerrado.")
+        except (psutil.NoSuchProcess, psutil.TimeoutExpired):
+            print(f"Erro ao encerrar processo WebDriver (PID: {driver_pid}), forçando encerramento.")
+            proc.kill()  # Força o encerramento do processo
         except Exception as e:
-            print(f"Erro ao tentar encerrar o processo: {e}")
+            print(f"Erro ao manipular o processo do WebDriver: {e}")
 
-def finalizar_app_processos():
+def finalizar_custodias_app():
+    app_name = "CustodiasApp.exe"
+    processos_encerrados = 0
+
+    # Itera sobre todos os processos ativos
     for proc in psutil.process_iter(['pid', 'name']):
-        if proc.info['name'] == 'CustodiasApp.exe':
-            time.sleep(3)
-            try:
-                proc.terminate()
-                time.sleep(3)
+        try:
+            if proc.info['name'].lower() == app_name.lower():
+                print(f"Encerrando {app_name} (PID: {proc.pid})...")
+                proc.terminate()  
+                proc.wait(timeout=5)
+
+                # Se não encerrar, forçar o encerramento
                 if proc.is_running():
-                    proc.kill()  # Força se ainda estiver rodando
-                print(f"Processo CustodiasApp.exe encerrado: {proc.pid}")
-            except psutil.NoSuchProcess:
-                print(f"Processo já encerrado.")
+                    print(f"Forçando encerramento de {app_name} (PID: {proc.pid})...")
+                    proc.kill()
+
+                processos_encerrados += 1
+
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue  # Ignora erros de processos inacessíveis ou já finalizados
+
+    if processos_encerrados == 0:
+        print(f"Nenhum processo {app_name} encontrado.")
+    else:
+        print(f"{processos_encerrados} processo(s) {app_name} finalizado(s) com sucesso.")
 
 # Função chamada ao fechar o programa
 def on_close(e):
-    """Evento chamado ao fechar a janela."""
     finalizar_driver()  # Função para finalizar o WebDriver
     finalizar_processos()  # Função para encerrar os processos do Firefox e Geckodriver
-    finalizar_app_processos()
+    finalizar_custodias_app()
     print("Janela fechada. Programa encerrado.")
 
 def main(pg: ft.Page):
@@ -392,7 +399,6 @@ def main(pg: ft.Page):
 
 def initialize_webdriver():    
     global driver_pid
-    """Initialize the Selenium WebDriver with necessary options."""
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--disable-gpu")
@@ -411,7 +417,6 @@ def initialize_webdriver():
         return None
 
 def clear_and_send_keys(element, value):
-    """Clear an input element and send keys."""
     element.clear()
     element.send_keys(value)
 
@@ -432,6 +437,10 @@ def windowSize(page):
 
 def executar_consulta(page):
     global driver, driver_pid, executado, mensagem_nenhum_resultado, resultados_anteriores
+
+    if not verificar_validade():
+        print("Data de validade atingida. Encerrando consultas.")
+        return
     
     print("inicializando webdriver...")
 
@@ -527,6 +536,7 @@ def executar_consulta(page):
         print(f"Erro geral: {e}")
         resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se houver um erro geral
         atualizar_resultados(resultados)
+        finalizar_custodias_app()
         return
  
     finally:        
