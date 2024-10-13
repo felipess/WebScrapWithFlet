@@ -15,7 +15,7 @@ import psutil
 data_validade = datetime.datetime(2024, 12, 8)  # Defina sua data de validade aqui
 
 # Variáveis globais
-VERSION = "4.1"
+VERSION = "4.2"
 driver = None
 driver_pid = None
 running_event = threading.Event()
@@ -258,25 +258,20 @@ def finalizar_processos():
     print("Processos finalizados com sucesso.")
 
 
-def finalizar_driver():
-    global driver, driver_pid
-    if driver:
-        try:
-            print("Encerrando WebDriver...")
-            driver.quit()  # Encerra o WebDriver
-        except Exception as e:
-            print(f"Erro ao encerrar o WebDriver: {e}")
-    if driver_pid:
-        try:
-            proc = psutil.Process(driver_pid)
-            proc.terminate()  # Enviar sinal para encerrar o processo
-            proc.wait(timeout=5)  # Aguarda até 5 segundos pelo encerramento
-            print(f"Processo WebDriver (PID: {driver_pid}) encerrado.")
-        except (psutil.NoSuchProcess, psutil.TimeoutExpired):
-            print(f"Erro ao encerrar processo WebDriver (PID: {driver_pid}), forçando encerramento.")
+def finalizar_driver(driver_pid):
+    print(f"Tentando finalizar driver com PID: {driver_pid}")
+    try:
+        proc = psutil.Process(driver_pid)
+        print(f"Processo: {proc} atribuido")
+        if proc.is_running():
+            print(f"Tentando encerrar processo: {proc}")
             proc.kill()  # Força o encerramento do processo
-        except Exception as e:
-            print(f"Erro ao manipular o processo do WebDriver: {e}")
+            print(f"Processo do WebDriver com PID {driver_pid} encerrado.")
+    except psutil.NoSuchProcess:
+        print(f"O processo com PID {driver_pid} não existe.")
+    except Exception as e:
+        print(f"Ocorreu um erro ao finalizar o driver: {e}")
+
 
 def finalizar_custodias_app():
     app_name = "CustodiasApp.exe"
@@ -468,7 +463,7 @@ def executar_consulta(page):
         wait = WebDriverWait(driver, 30)
         consultar_por = wait.until(EC.presence_of_element_located((By.ID, "divColConsultarPor")))
 
-        spinner_label.value = f"Preenchendo campos automaticamente..."
+        spinner_label.value = f"Preenchendo campos..."
         page.update()
 
         dropdown_button = consultar_por.find_element(By.CLASS_NAME, "dropdown-toggle")
@@ -497,6 +492,9 @@ def executar_consulta(page):
         
         botao_consultar = wait.until(EC.element_to_be_clickable((By.ID, "btnConsultar")))
         botao_consultar.click()
+
+        spinner_label.value = f"Buscando dados..."
+        page.update()
 
         # Verificar se há a mensagem de "Nenhum resultado encontrado"
         mensagem_erro = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
@@ -549,10 +547,16 @@ def executar_consulta(page):
             page.update()
         
         if driver:
+            # Obtendo o PID do driver
+            if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
+                pid = driver.service.process.pid
+                print(f"PID do driver: {pid}")
+
             driver.quit()
+            print(f"Encerrado driver: {driver} e PID: {pid}")
 
         if driver_pid:
-            finalizar_driver()  
+            finalizar_driver(driver_pid)  
         
         running_event.clear()
         if not termino_event.is_set():
