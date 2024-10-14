@@ -11,6 +11,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
+from utils.utils import (copiar_linha, obter_diferenca)
+from utils.data_utils import (converter_data, get_formatted_datetime)
 
 data_validade = datetime.datetime(2024, 12, 8)  # Data de validade
 
@@ -21,9 +23,11 @@ driver_pid = None
 running_event = threading.Event()
 termino_event = threading.Event()
 executado = False
-interval = 45
+interval = 900
 resultados_anteriores = []
 timers = []
+snackbars = []
+
 
 termos_buscados = ["custódia", "custodia"]
    
@@ -353,7 +357,7 @@ def main(pg: ft.Page):
                             weight="bold"
                         ),
                         alignment=ft.Alignment(0, 0),  # Centralizado horizontalmente
-                        padding=ft.Padding(0, 0, 20, 0)  # Espaço abaixo do título
+                        padding=ft.Padding(0, 0, 0, 0)  # Espaço abaixo do título
                     ),
                     # Row para todo o conteúdo centralizado
                     ft.Row(
@@ -393,10 +397,11 @@ def main(pg: ft.Page):
                             weight="bold"
                         ),
                         alignment=ft.Alignment(0, 0),  
-                        padding=ft.Padding(0, 0, 20, 0) 
+                        padding=ft.Padding(0, 0, 0, 0) 
                     ),
                 ],
-                alignment=ft.MainAxisAlignment.CENTER,
+                alignment=ft.CrossAxisAlignment.CENTER,
+                
                 spacing=20,
             )
         )
@@ -434,27 +439,7 @@ def iniciar_consulta(page, button):
 
 ###########################
 
-def clear_and_send_keys(element, value):
-    element.clear()
-    element.send_keys(value)
-
-def converter_data(data_str):
-    if isinstance(data_str, datetime.datetime):
-        return data_str.strftime("%d/%m/%Y")
-    try:
-        data_obj = datetime.datetime.strptime(data_str, "%Y-%m-%d %H:%M:%S")
-        return data_obj.strftime("%d/%m/%Y")
-    except ValueError as e:
-        print(f"Erro ao converter a data: {e}")
-        return None
-
-def verificar_validade():
-    return datetime.datetime.now() <= data_validade
-
-def get_formatted_datetime():
-    return datetime.datetime.now().strftime("%H:%M:%S")
-
-def copiar_linha(conteudo_linha):
+def copiar_linha(conteudo_linha, page):
     conteudo_ordenado = [conteudo_linha[i] for i in ordem_colunas]
 
     if len(conteudo_ordenado) > 0:  # Verifica se a coluna 0 existe
@@ -478,8 +463,15 @@ def copiar_linha(conteudo_linha):
     # Remove "Sala:" e tudo que vem depois
     if "Sala:" in texto:
         texto = texto.split("- Sala:")[0].strip()
-    pyperclip.copy(texto)  
-    print("Copiado texto: " + texto)
+    
+    # Copia o texto para a área de transferência
+    pyperclip.copy(texto)
+    exibir_alerta_js(page, "Texto copiado para a área de transferência.")
+    print(f"Copiado texto: {texto}")
+
+
+def verificar_validade():
+    return datetime.datetime.now() <= data_validade
 
 def atualizar_resultados(resultados):
     global page, resultados_anteriores
@@ -524,7 +516,7 @@ def atualizar_resultados(resultados):
                     ft.IconButton(
                         icon=ft.icons.CONTENT_COPY,
                         icon_color=ft.colors.BLUE,
-                        on_click=lambda e, r=resultado: copiar_linha(r),
+                        on_click=lambda e, r=resultado: copiar_linha(r, page),
                         icon_size=20,
                         tooltip="Copiar"
                     )
@@ -533,15 +525,6 @@ def atualizar_resultados(resultados):
             
             rows.append(ft.DataRow(cells=row_cells))
         atualizar_pagina(rows)
-
-def obter_diferenca(resultados_novos, resultados_anteriores):
-    """Compara os resultados e retorna as diferenças encontradas."""
-    diferencas = []
-    # Iterar pelos novos resultados e comparar com os anteriores
-    for i, resultado in enumerate(resultados_novos):
-        if i >= len(resultados_anteriores) or resultado != resultados_anteriores[i]:
-            diferencas.append(resultado)
-    return diferencas
 
 def atualizar_pagina(rows):
     global page
@@ -580,7 +563,7 @@ def atualizar_pagina(rows):
                 rows=rows,
                 data_row_min_height=60,
                 data_row_max_height=80,
-                width="100%",  
+                #width="100%",  ####aqui
             )
 
             # Coloque o DataTable dentro de um Container
@@ -590,7 +573,7 @@ def atualizar_pagina(rows):
                     scroll=ft.ScrollMode.ALWAYS,
                     height=650,
                 ),
-                padding=ft.Padding(50, 0, 50, 35),  
+                padding=ft.Padding(0, 10, 0, 10),  
             )
 
             page.data_table_container = data_table_container
@@ -606,6 +589,12 @@ def windowSize(page):
     page.window.min_width = 1200
     page.window.min_height = 900
     page.window.maximized = True # Maximiza a janela
+
+def exibir_alerta_js(page, mensagem):
+    alerta = ft.SnackBar(ft.Text(mensagem), open=True, duration=2000)
+    page.overlay.append(alerta)
+    page.overlay.extend(snackbars)  # Atualiza a lista de overlays
+    page.update()
 
 if __name__ == "__main__":
     ft.app(target=main)
