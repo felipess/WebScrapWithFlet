@@ -26,7 +26,7 @@ interval = 900
 resultados_anteriores = []
 timers = []
 snackbars = []
-spinner_label = ft.Text(value="Buscar", size=12, color=ft.colors.GREY_600)
+spinner_label = ft.Text(value="Buscar", size=12)
 
 
 termos_buscados = ["custódia", "custodia"]
@@ -72,7 +72,7 @@ start_button = ft.CupertinoFilledButton(
     content=ft.Row(  
         controls=[
             ft.Icon(ft.icons.PLAY_ARROW, size=16),  
-            ft.Text(spinner_label.value, size=12, color=ft.colors.GREY),  # Inicialmente exibe o valor de spinner_label
+            ft.Text(spinner_label.value, size=12),  # Inicialmente exibe o valor de spinner_label
         ],
         alignment=ft.MainAxisAlignment.CENTER  
     ),
@@ -192,28 +192,19 @@ def executar_consulta(page):
         start_button.update()    
 
         if spinner_label:
-            spinner_label.value = f"Em execução..."
+            spinner_label.value = f"Busca Agendada"
             atualizar_texto_botao()
             executado = True
             page.update()
-        
-        # if driver:
-        #     if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
-        #         pid = driver.service.process.pid
-        #         print(f"PID do driver: {pid}")
-        #     driver.quit()
-        #     print(f"Encerrado driver: {driver} e PID: {pid}")
-        #     driver = None  # Reseta o driver para evitar chamadas repetidas
 
         if driver:
             if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
                 pid = driver.service.process.pid
                 print(f"PID do driver: {pid}")
-            finalizar_driver(driver)  # Encerra o driver Selenium finalizar_driver
+            finalizar_driver(driver)
         if driver_pid:
-            finalizar_driver_pid(driver_pid)  # Encerra o driver Selenium finalizar_driver
-            # driver_pid.quit()
-            # driver_pid = None  # Reseta o driver para evitar chamadas repetidas
+            finalizar_driver_pid(driver_pid)
+
 
         running_event.clear()
         if not termino_event.is_set():
@@ -234,7 +225,6 @@ def agendar_proxima_consulta(page):
 
 def main(pg: ft.Page):
     global start_button
-
     # from splash_screen import splash_screen  # Importa a função do arquivo splash_screen.py
     global driver, driver_pid, entry_data_inicio, entry_data_fim, spinner_label, page, ultima_consulta, proxima_consulta 
     page = pg
@@ -248,13 +238,6 @@ def main(pg: ft.Page):
     page.window.on_event = on_window_event
 
     def handle_yes(e):
-        # cancelar_timers(timers)
-        # termino_event.is_set()
-        # running_event.clear()
-        # if driver:
-        #     finalizar_driver(driver)  # Encerra o driver Selenium finalizar_driver
-        # if driver_pid:
-        #     finalizar_driver_pid(driver_pid)  # Encerra o driver Selenium finalizar_driver
         page.window.destroy()
 
     def handle_no(e):
@@ -372,15 +355,7 @@ def iniciar_consulta(page, button):
     start_button = button  # Armazena o botão para referência
     start_button.disabled = True
     start_button.update()
-
     alterar_status_execucao("Executando...")  # Atualiza o texto ao iniciar a consulta
-
-    # start_button.disabled = True # Desabilita o botão para evitar cliques duplicados
-    # button.content.controls[1] = ft.Text(" Em execução...", size=12, color=ft.colors.GREY)  # Atualiza apenas o texto
-    # spinner_label = ft.Text(" Em execução...", size=12, color=ft.colors.GREY)  # Atualiza apenas o texto
-    # button.update()  # Atualiza o botão para refletir a mudança
-    # spinner_label.value = f"Pesquisa iniciada..."
-    # page.update()
     executar_consulta(page)
 
 ###########################
