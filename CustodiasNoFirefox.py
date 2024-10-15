@@ -1,9 +1,7 @@
 import flet as ft
 import time
-import pyperclip
 import datetime
 import threading
-import psutil
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -12,7 +10,8 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 from utils.utils import (copiar_linha, obter_diferenca)
-from utils.data_utils import (converter_data, get_formatted_datetime)
+from utils.utils_data import (converter_data, get_formatted_datetime)
+from utils.utils_closures import (cancelar_timers, finalizar_custodias_app, finalizar_driver, finalizar_processos)
 
 data_validade = datetime.datetime(2024, 12, 8)  # Data de validade
 
@@ -23,10 +22,11 @@ driver_pid = None
 running_event = threading.Event()
 termino_event = threading.Event()
 executado = False
-interval = 900
+interval = 25
 resultados_anteriores = []
 timers = []
 snackbars = []
+is_closing = False  # Variável global para controlar o estado de fechamento
 
 
 termos_buscados = ["custódia", "custodia"]
@@ -203,136 +203,62 @@ def executar_consulta(page):
             driver = None  # Reseta o driver para evitar chamadas repetidas
 
         if driver_pid:
-            finalizar_driver()  
+            finalizar_driver(driver, driver_pid)  
             # driver_pid.quit()
             # driver_pid = None  # Reseta o driver para evitar chamadas repetidas
 
         
         running_event.clear()
-        # if not termino_event.is_set():
-        #     print("Agendado")
-        agendar_proxima_consulta(page)
-        # print("Consulta finalizada")
+        if not termino_event.is_set():
+            print("Agendado")
+            agendar_proxima_consulta(page)
+        else:
+            print("Não Agendado")
 
-
+        print("Execução finalizada")
 
 def agendar_proxima_consulta(page):
-    cancelar_timers()
+    cancelar_timers(timers)
     next_run = datetime.datetime.now() + datetime.timedelta(seconds=interval)
     delay = (next_run - datetime.datetime.now()).total_seconds()
-
     timer = threading.Timer(delay, lambda: executar_consulta(page))
     timers.append(timer)
     timer.start()
 
-# Encerrar Firefox e Geckodriver
-def finalizar_processos():
-    # Obtém todos os processos do Firefox e GeckoDriver
-    firefox_processes = [p for p in psutil.process_iter(['name']) if 'firefox' in p.info['name'].lower()]
-    geckodriver_processes = [p for p in psutil.process_iter(['name']) if 'geckodriver' in p.info['name'].lower()]
-
-    # Encerra os processos do Firefox individualmente
-    for proc in firefox_processes:
-        try:
-            print(f"Encerrando processo do Firefox: {proc.pid}")
-            proc.terminate()
-            #proc.wait(timeout=5)  # Aguarda até 5 segundos para o processo encerrar
-        except psutil.NoSuchProcess:
-            print(f"Firefox - O processo {proc.pid} não existe.")
-        except psutil.TimeoutExpired:
-            print(f"Firefox - O processo {proc.pid} não encerrou a tempo. Tentando encerrar forçosamente.")
-            proc.kill()  # Força o encerramento
-
-    # Encerra os processos do GeckoDriver individualmente
-    for proc in geckodriver_processes:
-        try:
-            print(f"Encerrando processo do GeckoDriver: {proc.pid}")
-            proc.terminate()
-            #proc.wait(timeout=5)  # Aguarda até 5 segundos para o processo encerrar
-        except psutil.NoSuchProcess:
-            print(f"GeckoDriver - O processo {proc.pid} não existe.")
-        except psutil.TimeoutExpired:
-            print(f"GeckoDriver - O processo {proc.pid} não encerrou a tempo. Tentando encerrar forçosamente.")
-            proc.kill()  # Força o encerramento
-
-def finalizar_driver():
-    global driver, driver_pid
-    if driver:
-        try:
-            print("Encerrando o driver do Selenium...")
-            driver.quit()  # Fecha o Firefox e encerra o driver
-            time.sleep(1)  # Adiciona um delay para garantir que o processo feche
-            driver = None  # Reseta o driver para evitar chamadas repetidas
-            print("Driver do Selenium encerrado com sucesso.")
-        except Exception as e:
-            print(f"Ocorreu um erro ao encerrar o driver: {e}")
-    else:
-        print("Nenhum driver para encerrar.")
-    
-    try:
-        proc = psutil.Process(driver_pid)
-        print(f"Processo: {proc} atribuido")
-        if proc.is_running():
-            print(f"Tentando encerrar processo: {proc}")
-            proc.kill()  # Força o encerramento do processo
-            print(f"Processo do WebDriver com PID {driver_pid} encerrado.")
-    except psutil.NoSuchProcess:
-        print(f"O processo com PID {driver_pid} não existe.")
-    except Exception as e:
-        print(f"Ocorreu um erro ao finalizar o driver: {e}")
-
-def finalizar_custodias_app():
-    app_name = "CustodiasApp.exe"
-    processos_encerrados = 0
-
-    for proc in psutil.process_iter(['pid', 'name']):
-        try:
-            if proc.info['name'].lower() == app_name.lower():
-                proc.terminate()
-                #proc.wait(timeout=2)
-                processos_encerrados += 1
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            continue
-
-    if processos_encerrados == 0:
-        print(f"Nenhum processo {app_name} encontrado.")
-    else:
-        print(f"{processos_encerrados} processo(s) {app_name} finalizado(s) com sucesso.")
-
-def cancelar_timers():
-    for timer in timers:
-        timer.cancel()  # Cancela cada timer ativo
-    timers.clear()  # Limpa a lista de timers
-
-# Função chamada ao fechar o programa
-def on_close(e):
-    # termino_event.is_set()
-    # time.sleep(1)
-    page.window_close()  # Fecha a janela de forma explícita
-    exit(0)  # Garante o encerramento completo do programa
-    cancelar_timers()  # Cancela os timers antes de fechar
-    finalizar_processos()  # Função para encerrar os processos do Firefox e Geckodriver
-    finalizar_driver()  # Encerrar o driver do Selenium
-
-    running_event.clear()
-    termino_event.clear()
-
-    # for i in range(len(timers) - 1, -1, -1):  # Itera sobre os timers de trás para frente
-    #     remover_agendamento(i)  # Remove cada timer
-    finalizar_custodias_app()
-
+def on_window_event(e):
+    global is_closing
+    if is_closing:  # Se já estiver fechando, ignore o evento
+        return
+    if e.data == "close":
+        print("cancelar_timers")
+        cancelar_timers(timers)  # Cancela os timers
+        print("finalizar_processos")
+        finalizar_processos()  # Encerra processos do Firefox e Geckodriver
+        print("finalizar_drivers")
+        finalizar_driver(driver, driver_pid)  # Encerra o driver Selenium
+        print("finalizar_eventos")
+        running_event.clear()
+        termino_event.clear()
+        print("finalizar_custodias_app")
+        finalizar_custodias_app()  # Limpeza final
+        print("Encerramento EXE")
+        is_closing = True  # Marcar que o fechamento está em andamento
+        page.window.destroy()
 
 def main(pg: ft.Page):
     # from splash_screen import splash_screen  # Importa a função do arquivo splash_screen.py
-    pg.on_close = on_close  
     global driver, driver_pid, entry_data_inicio, entry_data_fim, spinner_label, page, ultima_consulta, proxima_consulta 
     page = pg
+    
+    # Impede o fechamento direto e define o evento personalizado de fechamento
+    page.window.prevent_close = True  
+    page.window.on_event = on_window_event
+
     # splash_screen(page)
 
     windowSize(page)
 
     page.title = f"Pesquisa custódias JFPR - Versão {VERSION} - Valido até {converter_data(data_validade)}"
-    
     page.vertical_alignment = ft.MainAxisAlignment.START
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
@@ -409,14 +335,11 @@ def main(pg: ft.Page):
     page.update()
 
 def initialize_webdriver():    
-    global driver_pid
+    global driver_pid, driver
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
-    options.add_argument("--width=1080")
-    options.add_argument("--height=720")
-    global driver
 
     try:
         driver = webdriver.Firefox(options=options)
@@ -425,7 +348,6 @@ def initialize_webdriver():
         return driver
     except Exception as e:
         print(f"Erro ao inicializar o driver: {e}")
-        finalizar_driver()
         return None
 
 def iniciar_consulta(page, button):
@@ -436,39 +358,7 @@ def iniciar_consulta(page, button):
     page.update()
     executar_consulta(page)
 
-
 ###########################
-
-def copiar_linha(conteudo_linha, page):
-    conteudo_ordenado = [conteudo_linha[i] for i in ordem_colunas]
-
-    if len(conteudo_ordenado) > 0:  # Verifica se a coluna 0 existe
-        coluna_0_texto = conteudo_ordenado[0]
-
-        if "Observação:" in coluna_0_texto:
-            coluna_0_texto = coluna_0_texto.split("Observação:")[0].strip() # Remove "Observação:" e tudo o que vem depois       
-        conteudo_ordenado[0] = coluna_0_texto  
-
-    if len(conteudo_ordenado) > 4:  # Verifica se a coluna 4 existe
-        coluna_4_texto = conteudo_ordenado[4]
-        
-        conteudo_ordenado[4] = coluna_4_texto  # Atualiza a coluna 4 com o texto modificado
-
-    # Formata o texto final
-    texto = ' - '.join(conteudo_ordenado)  # Une o conteúdo da linha em uma string
-
-    # Remove "Evento:" do texto, se presente
-    texto = texto.replace("Evento:", "").strip()
-    
-    # Remove "Sala:" e tudo que vem depois
-    if "Sala:" in texto:
-        texto = texto.split("- Sala:")[0].strip()
-    
-    # Copia o texto para a área de transferência
-    pyperclip.copy(texto)
-    exibir_alerta_js(page, "Texto copiado para a área de transferência.")
-    print(f"Copiado texto: {texto}")
-
 
 def verificar_validade():
     return datetime.datetime.now() <= data_validade
@@ -491,7 +381,7 @@ def atualizar_resultados(resultados):
             open=True,
             show_close_icon=True,
             duration=interval * 1000 - 5000,
-            close_icon_color=ft.colors.RED
+            # close_icon_color=ft.colors.RED
         )
 
         page.overlay.append(snack_bar)
@@ -516,7 +406,7 @@ def atualizar_resultados(resultados):
                     ft.IconButton(
                         icon=ft.icons.CONTENT_COPY,
                         icon_color=ft.colors.BLUE,
-                        on_click=lambda e, r=resultado: copiar_linha(r, page),
+                        on_click=lambda e, r=resultado: copiar_linha(r, page, ordem_colunas),
                         icon_size=20,
                         tooltip="Copiar"
                     )
@@ -530,7 +420,6 @@ def atualizar_pagina(rows):
     global page
     global mensagem_nenhum_resultado
     page.window.maximized = True
-
 
     if page:
         # Remover a mensagem de "Nenhum resultado encontrado"
@@ -580,21 +469,11 @@ def atualizar_pagina(rows):
             page.controls.append(page.data_table_container)
         page.update()
 
-def get_text_width(text, font_size):
-    average_char_width = 7
-    return len(text) * average_char_width
-
-
 def windowSize(page):
     page.window.min_width = 1200
     page.window.min_height = 900
     page.window.maximized = True # Maximiza a janela
 
-def exibir_alerta_js(page, mensagem):
-    alerta = ft.SnackBar(ft.Text(mensagem), open=True, duration=2000)
-    page.overlay.append(alerta)
-    page.overlay.extend(snackbars)  # Atualiza a lista de overlays
-    page.update()
-
 if __name__ == "__main__":
     ft.app(target=main)
+    
