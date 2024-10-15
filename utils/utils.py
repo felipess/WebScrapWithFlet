@@ -34,8 +34,15 @@ def copiar_linha(conteudo_linha, page, ordem_colunas):
 def obter_diferenca(resultados_novos, resultados_anteriores):
     diferencas = []
     for i, resultado in enumerate(resultados_novos):
-        if i >= len(resultados_anteriores) or resultado != resultados_anteriores[i]:
+        if i >= len(resultados_anteriores):
             diferencas.append(resultado)
+        else:
+            # Normaliza os textos para comparação
+            resultado_normalizado = [normalizar_texto(campo) for campo in resultado]
+            anterior_normalizado = [normalizar_texto(campo) for campo in resultados_anteriores[i]]
+
+            if resultado_normalizado != anterior_normalizado:
+                diferencas.append(resultado)
     return diferencas
 
 def exibir_alerta(page):
@@ -49,3 +56,15 @@ def exibir_alerta(page):
         # on_dismiss=lambda e: page.add(ft.Text("Non-modal dialog dismissed")),
     )
     page.open(dlg)
+
+def exibir_alerta_fechamento(page):
+    dlg = ft.AlertDialog(
+        title=ft.Text("Aviso", size=16, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
+        content=ft.Text("Programa encerrando...", text_align=ft.TextAlign.CENTER),
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+    page.open(dlg)
+    
+def normalizar_texto(texto):
+    """Remove espaços extras e normaliza o texto para evitar diferenças invisíveis."""
+    return " ".join(texto.split()).strip()

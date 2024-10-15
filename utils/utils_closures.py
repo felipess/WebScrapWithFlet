@@ -27,7 +27,7 @@ def finalizar_processos():
             print(f"GeckoDriver - O processo {proc.pid} não encerrou a tempo. Tentando encerrar forçosamente.")
             proc.kill()  # Força o encerramento
 
-def finalizar_driver(driver, driver_pid):
+def finalizar_driver(driver):
     if driver:
         try:
             print("Encerrando o driver do Selenium...")
@@ -41,6 +41,7 @@ def finalizar_driver(driver, driver_pid):
         print("Nenhum driver para encerrar.")
         return
     
+def finalizar_driver_pid(driver_pid):    
     try:
         proc = psutil.Process(driver_pid)
         print(f"Processo: {proc} atribuido")

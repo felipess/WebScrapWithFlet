@@ -11,7 +11,7 @@ from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 from utils.utils import (copiar_linha, obter_diferenca)
 from utils.utils_data import (converter_data, get_formatted_datetime)
-from utils.utils_closures import (cancelar_timers, finalizar_custodias_app, finalizar_driver, finalizar_processos)
+from utils.utils_closures import (cancelar_timers, finalizar_custodias_app, finalizar_driver, finalizar_driver_pid)
 
 data_validade = datetime.datetime(2024, 12, 8)  # Data de validade
 
@@ -22,12 +22,10 @@ driver_pid = None
 running_event = threading.Event()
 termino_event = threading.Event()
 executado = False
-interval = 25
+interval = 900
 resultados_anteriores = []
 timers = []
 snackbars = []
-is_closing = False  # Variável global para controlar o estado de fechamento
-
 
 termos_buscados = ["custódia", "custodia"]
    
@@ -194,20 +192,24 @@ def executar_consulta(page):
             executado = True
             page.update()
         
+        # if driver:
+        #     if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
+        #         pid = driver.service.process.pid
+        #         print(f"PID do driver: {pid}")
+        #     driver.quit()
+        #     print(f"Encerrado driver: {driver} e PID: {pid}")
+        #     driver = None  # Reseta o driver para evitar chamadas repetidas
+
         if driver:
             if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
                 pid = driver.service.process.pid
                 print(f"PID do driver: {pid}")
-            driver.quit()
-            print(f"Encerrado driver: {driver} e PID: {pid}")
-            driver = None  # Reseta o driver para evitar chamadas repetidas
-
+            finalizar_driver(driver)  # Encerra o driver Selenium finalizar_driver
         if driver_pid:
-            finalizar_driver(driver, driver_pid)  
+            finalizar_driver_pid(driver_pid)  # Encerra o driver Selenium finalizar_driver
             # driver_pid.quit()
             # driver_pid = None  # Reseta o driver para evitar chamadas repetidas
 
-        
         running_event.clear()
         if not termino_event.is_set():
             print("Agendado")
@@ -225,34 +227,42 @@ def agendar_proxima_consulta(page):
     timers.append(timer)
     timer.start()
 
-def on_window_event(e):
-    global is_closing
-    if is_closing:  # Se já estiver fechando, ignore o evento
-        return
-    if e.data == "close":
-        print("cancelar_timers")
-        cancelar_timers(timers)  # Cancela os timers
-        print("finalizar_processos")
-        finalizar_processos()  # Encerra processos do Firefox e Geckodriver
-        print("finalizar_drivers")
-        finalizar_driver(driver, driver_pid)  # Encerra o driver Selenium
-        print("finalizar_eventos")
-        running_event.clear()
-        termino_event.clear()
-        print("finalizar_custodias_app")
-        finalizar_custodias_app()  # Limpeza final
-        print("Encerramento EXE")
-        is_closing = True  # Marcar que o fechamento está em andamento
-        page.window.destroy()
-
 def main(pg: ft.Page):
     # from splash_screen import splash_screen  # Importa a função do arquivo splash_screen.py
     global driver, driver_pid, entry_data_inicio, entry_data_fim, spinner_label, page, ultima_consulta, proxima_consulta 
     page = pg
+
+    def on_window_event(e):
+        if e.data == "close":
+            page.open(confirm_dialog)
     
     # Impede o fechamento direto e define o evento personalizado de fechamento
     page.window.prevent_close = True  
     page.window.on_event = on_window_event
+
+    def handle_yes(e):
+        # cancelar_timers(timers)
+        # termino_event.is_set()
+        # running_event.clear()
+        # if driver:
+        #     finalizar_driver(driver)  # Encerra o driver Selenium finalizar_driver
+        # if driver_pid:
+        #     finalizar_driver_pid(driver_pid)  # Encerra o driver Selenium finalizar_driver
+        page.window.destroy()
+
+    def handle_no(e):
+        page.close(confirm_dialog)
+
+    confirm_dialog = ft.AlertDialog(
+        modal=True,
+        title=ft.Text("Confirmação", size=16, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
+        content=ft.Text("Você realmente quer sair do programa?"),
+        actions=[
+            ft.ElevatedButton("Sim", on_click=handle_yes),
+            ft.OutlinedButton("Não", on_click=handle_no),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
 
     # splash_screen(page)
 
@@ -419,7 +429,7 @@ def atualizar_resultados(resultados):
 def atualizar_pagina(rows):
     global page
     global mensagem_nenhum_resultado
-    page.window.maximized = True
+    # page.window.maximized = True
 
     if page:
         # Remover a mensagem de "Nenhum resultado encontrado"
