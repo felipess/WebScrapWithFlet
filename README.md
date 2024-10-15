@@ -13,6 +13,9 @@ py -m PyInstaller --onefile --windowed .\CustodiasJFPR2.py
 # para ja renomear o exe na saida
 py -m PyInstaller --onefile --windowed --name CustodiasApp .\CustodiasNoFirefox.py
 
+# Comando completo para adicionar >>> Icone na janela
+Deve arquivo deve estar em assests no formato .ico
+py -m PyInstaller --onefile --windowed --name CustodiasApp --icon="C:\repos\Github\WebScrapWithFlet\assets\justice_icon.ico" .\CustodiasNoFirefox.py
 
 # ficara dentro da pasta dist
 

@@ -1,3 +1,5 @@
+
+
 import flet as ft
 import time
 import datetime
@@ -26,19 +28,22 @@ interval = 900
 resultados_anteriores = []
 timers = []
 snackbars = []
-spinner_label = ft.Text(value="Buscar", size=12)
-
-
 termos_buscados = ["custódia", "custodia"]
-   
-ultima_consulta = ft.Text(f"", size=11, color=ft.colors.GREY_600)
-proxima_consulta = ft.Text(f"", size=11, color=ft.colors.GREY_600)
+
+sizeFontRows = 12
+spinner_label = ft.Text(value="Iniciar", size=sizeFontRows)
+ultima_consulta = ft.Text(f"", size=sizeFontRows, color=ft.colors.GREY_600)
+proxima_consulta = ft.Text(f"", size=sizeFontRows, color=ft.colors.GREY_600)
 
 text_style = ft.TextStyle(
-    color=ft.colors.GREY_600,  
-    size=11,  
+    color=ft.colors.GREY_600,
+    size=sizeFontRows,
 )
-sizeFontRows = 10
+
+date_text_style = ft.TextStyle(
+    color=ft.colors.GREY_600,
+    size=sizeFontRows,
+)
 
 # Datas padrão
 hoje = datetime.datetime.now()
@@ -51,34 +56,36 @@ ordem_colunas = [4, 1, 2, 0, 3]  #Data/Autos/Juizo/Sala/Evento
 
 entry_data_inicio = ft.TextField(
     label="Data Início",
-    label_style=text_style,
+    label_style=date_text_style,
     value=data_inicio_default,
-    width=102,
-    text_style=text_style, 
-    read_only=True,  # BLOQUEIO DA EDIÇÃO DE DATA 
+    width=106,
+    text_style=date_text_style,
+    read_only=True,  # BLOQUEIO DA EDIÇÃO DE DATA
     disabled=True  # Torna o campo não clicável
 )
 entry_data_fim = ft.TextField(
     label="Data Fim",
-    label_style=text_style,
+    label_style=date_text_style,
     value=data_fim_default,
-    width=102,
-    text_style=text_style,
-    read_only=True,  # BLOQUEIO DA EDIÇÃO DE DATA 
+    width=106,
+    text_style=date_text_style,
+    read_only=True,  # BLOQUEIO DA EDIÇÃO DE DATA
     disabled=True,  # Torna o campo não clicável
 )
 
 start_button = ft.CupertinoFilledButton(
-    content=ft.Row(  
+    content=ft.Row(
         controls=[
-            ft.Icon(ft.icons.PLAY_ARROW, size=16),  
-            ft.Text(spinner_label.value, size=12),  # Inicialmente exibe o valor de spinner_label
+            # ft.Icon(ft.icons.PLAY_ARROW, size=16),
+            ft.Text(spinner_label.value, size=sizeFontRows),  # Inicialmente exibe o valor de spinner_label
         ],
-        alignment=ft.MainAxisAlignment.CENTER  
+        alignment=ft.MainAxisAlignment.CENTER
     ),
     opacity_on_click=0.5,
-    on_click=lambda e: iniciar_consulta(page, start_button), 
-    width=350  # Define a largura mínima do botão 
+    on_click=lambda e: iniciar_consulta(page, start_button),
+    width=200,  # Define a largura mínima do botão
+    height=49,  # Altura do botão
+    border_radius=ft.BorderRadius(4,4,4,4),  # Define o border radius
 )
 
 def executar_consulta(page):
@@ -87,7 +94,7 @@ def executar_consulta(page):
     if not verificar_validade():
         print("Data de validade atingida. Encerrando consultas.")
         return
-    
+
     print("inicializando webdriver...")
 
     driver = initialize_webdriver()
@@ -98,23 +105,23 @@ def executar_consulta(page):
     page.overlay.append(snack_bar)
 
     running_event.set()
-    
+
     try:
         resultados = []
         titulos = ["Data/Hora", "Autos", "Classe", "Processo", "Parte", "Status", "Sistema"]
 
-        spinner_label.value = f"Navegando para JFPR..."
-        atualizar_texto_botao()
-        
+        # spinner_label.value = f"Navegando..."
+        # atualizar_texto_botao()
+
         driver.get("https://eproc.jfpr.jus.br/eprocV2/externo_controlador.php?acao=pauta_audiencias")
 
         time.sleep(1)
-       
+
         wait = WebDriverWait(driver, 30)
         consultar_por = wait.until(EC.presence_of_element_located((By.ID, "divColConsultarPor")))
 
-        spinner_label.value = f"Preenchendo campos..."
-        atualizar_texto_botao()
+        # spinner_label.value = f"Preenchendo..."
+        # atualizar_texto_botao()
 
         dropdown_button = consultar_por.find_element(By.CLASS_NAME, "dropdown-toggle")
         dropdown_button.click()
@@ -138,12 +145,12 @@ def executar_consulta(page):
         campo_data_fim = wait.until(EC.presence_of_element_located((By.ID, "txtDataTermino")))
         campo_data_fim.clear()
         campo_data_fim.send_keys(data_fim)
-        
+
         botao_consultar = wait.until(EC.element_to_be_clickable((By.ID, "btnConsultar")))
         botao_consultar.click()
 
-        spinner_label.value = f"Buscando dados..."
-        atualizar_texto_botao()
+        # spinner_label.value = f"Buscando..."
+        # atualizar_texto_botao()
 
         # Verificar se há a mensagem de "Nenhum resultado encontrado"
         mensagem_erro = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
@@ -163,7 +170,7 @@ def executar_consulta(page):
                 for td in tds:
                     td_html = td.get_attribute('innerHTML')
                     td_soup = BeautifulSoup(td_html, 'html.parser')
-                    td_text = td_soup.get_text(separator=" ").split("Classe:")[0].strip()  
+                    td_text = td_soup.get_text(separator=" ").split("Classe:")[0].strip()
                     if "ocorreu um erro" in td_text.lower():
                         erro_encontrado = True
                         break
@@ -185,14 +192,14 @@ def executar_consulta(page):
         atualizar_resultados(resultados)
         finalizar_custodias_app()
         return
- 
-    finally:    
+
+    finally:
         # Garantir que o botão permaneça desabilitado
         start_button.disabled = True
-        start_button.update()    
+        start_button.update()
 
         if spinner_label:
-            spinner_label.value = f"Busca Agendada"
+            spinner_label.value = f"Agendada"
             atualizar_texto_botao()
             executado = True
             page.update()
@@ -226,16 +233,17 @@ def agendar_proxima_consulta(page):
 def main(pg: ft.Page):
     global start_button
     # from splash_screen import splash_screen  # Importa a função do arquivo splash_screen.py
-    global driver, driver_pid, entry_data_inicio, entry_data_fim, spinner_label, page, ultima_consulta, proxima_consulta 
+    global driver, driver_pid, entry_data_inicio, entry_data_fim, spinner_label, page, ultima_consulta, proxima_consulta
     page = pg
 
     def on_window_event(e):
         if e.data == "close":
             page.open(confirm_dialog)
-    
+
     # Impede o fechamento direto e define o evento personalizado de fechamento
-    page.window.prevent_close = True  
+    page.window.prevent_close = True
     page.window.on_event = on_window_event
+    pg.window.icon = "C:\\repos\\Github\\WebScrapWithFlet\\assets\\justice_icon.ico"
 
     def handle_yes(e):
         page.window.destroy()
@@ -265,7 +273,7 @@ def main(pg: ft.Page):
     if not verificar_validade():
         pg.add(ft.Text("Este programa não é mais válido - permissão expirada. Entre em contato com o desenvolvedor feliped@mpf.mp.br pelo Zoom."))
         pg.update()
-        return      
+        return
 
     spinner_label = ft.Text("", size=10, color=ft.colors.BLUE_500)
     page.update()
@@ -301,10 +309,10 @@ def main(pg: ft.Page):
                             # Botão Start
                             start_button,
                         ],
-                        alignment=ft.MainAxisAlignment.CENTER,  
+                        alignment=ft.MainAxisAlignment.CENTER,
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
                         spacing=10,
-                    ),                    
+                    ),
                     ft.Container(
                         content=ft.Row(
                             controls=[
@@ -322,19 +330,19 @@ def main(pg: ft.Page):
                             size=18,
                             weight="bold"
                         ),
-                        alignment=ft.Alignment(0, 0),  
-                        padding=ft.Padding(0, 0, 0, 0) 
+                        alignment=ft.Alignment(0, 0),
+                        padding=ft.Padding(0, 0, 0, 0)
                     ),
                 ],
                 alignment=ft.CrossAxisAlignment.CENTER,
-                
+
                 spacing=20,
             )
         )
     )
     page.update()
 
-def initialize_webdriver():    
+def initialize_webdriver():
     global driver_pid, driver
     options = Options()
     options.add_argument("--headless")
@@ -355,7 +363,7 @@ def iniciar_consulta(page, button):
     start_button = button  # Armazena o botão para referência
     start_button.disabled = True
     start_button.update()
-    alterar_status_execucao("Executando...")  # Atualiza o texto ao iniciar a consulta
+    alterar_status_execucao("Buscando...")  # Atualiza o texto ao iniciar a consulta
     executar_consulta(page)
 
 ###########################
@@ -377,7 +385,7 @@ def atualizar_resultados(resultados):
         mensagem = " - ".join(mensagens)
 
         snack_bar = ft.SnackBar(
-            ft.Text(f"Atualização: {mensagem}"),
+            ft.Text(f"Atualizado: {mensagem}", size=sizeFontRows),
             open=True,
             show_close_icon=True,
             duration=interval * 1000 - 5000,
@@ -388,9 +396,9 @@ def atualizar_resultados(resultados):
         page.window.maximized = True
         page.window.to_front()
     resultados_anteriores = resultados.copy()
-    
+
     if page:
-        ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}" 
+        ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}"
         proxima_consulta.value = f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=interval):%H:%M:%S}"
 
         # Preparar a tabela com resultados
@@ -412,7 +420,7 @@ def atualizar_resultados(resultados):
                     )
                 ),
             ]
-            
+
             rows.append(ft.DataRow(cells=row_cells))
         atualizar_pagina(rows)
 
@@ -426,17 +434,17 @@ def atualizar_pagina(rows):
         if hasattr(page, 'mensagem_nenhum_resultado'):
             if page.mensagem_nenhum_resultado in page.controls:
                 page.controls.remove(page.mensagem_nenhum_resultado)
-                del page.mensagem_nenhum_resultado        
-        
+                del page.mensagem_nenhum_resultado
+
         #Remover a tabela de resultados
         if hasattr(page, 'data_table_container') and page.data_table_container in page.controls:
             page.controls.remove(page.data_table_container)
 
-        
+
         if mensagem_nenhum_resultado != None:
             if not hasattr(page, 'mensagem_nenhum_resultado'):
                 page.mensagem_nenhum_resultado = ft.Text(mensagem_nenhum_resultado, size=sizeFontRows)
-            
+
             if page.mensagem_nenhum_resultado not in page.controls:
                 page.controls.append(page.mensagem_nenhum_resultado)
         else:
@@ -462,7 +470,7 @@ def atualizar_pagina(rows):
                     scroll=ft.ScrollMode.ALWAYS,
                     height=650,
                 ),
-                padding=ft.Padding(0, 10, 0, 10),  
+                padding=ft.Padding(0, 10, 0, 10),
             )
 
             page.data_table_container = data_table_container
@@ -477,8 +485,10 @@ def windowSize(page):
 # Função para atualizar o texto do botão dinamicamente
 def atualizar_texto_botao():
     """Atualiza o texto do botão com o valor atual de spinner_label."""
-    start_button.content.controls[1] = ft.Text(
-        spinner_label.value, size=12, color=ft.colors.GREY
+    start_button.content.controls[0] = ft.Text(
+        spinner_label.value,
+        size=sizeFontRows,
+        color=ft.colors.GREY
     )
     start_button.update()  # Atualiza o botão na interface
 
@@ -488,5 +498,5 @@ def alterar_status_execucao(novo_texto):
     atualizar_texto_botao()  # Chama a função para atualizar o texto do botão
 
 if __name__ == "__main__":
-    ft.app(target=main)
-    
+    ft.app(target=main, assets_dir="assets")
+
