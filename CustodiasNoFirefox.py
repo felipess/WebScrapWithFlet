@@ -26,6 +26,8 @@ interval = 900
 resultados_anteriores = []
 timers = []
 snackbars = []
+spinner_label = ft.Text(value="Buscar", size=12, color=ft.colors.GREY_600)
+
 
 termos_buscados = ["custódia", "custodia"]
    
@@ -70,12 +72,13 @@ start_button = ft.CupertinoFilledButton(
     content=ft.Row(  
         controls=[
             ft.Icon(ft.icons.PLAY_ARROW, size=16),  
-            ft.Text(" Iniciar Consulta", size=12),  
+            ft.Text(spinner_label.value, size=12, color=ft.colors.GREY),  # Inicialmente exibe o valor de spinner_label
         ],
         alignment=ft.MainAxisAlignment.CENTER  
     ),
     opacity_on_click=0.5,
-    on_click=lambda e: iniciar_consulta(page, start_button),  
+    on_click=lambda e: iniciar_consulta(page, start_button), 
+    width=350  # Define a largura mínima do botão 
 )
 
 def executar_consulta(page):
@@ -100,8 +103,8 @@ def executar_consulta(page):
         resultados = []
         titulos = ["Data/Hora", "Autos", "Classe", "Processo", "Parte", "Status", "Sistema"]
 
-        spinner_label.value = f"Navegando para o site da JFPR..."
-        page.update()
+        spinner_label.value = f"Navegando para JFPR..."
+        atualizar_texto_botao()
         
         driver.get("https://eproc.jfpr.jus.br/eprocV2/externo_controlador.php?acao=pauta_audiencias")
 
@@ -111,7 +114,7 @@ def executar_consulta(page):
         consultar_por = wait.until(EC.presence_of_element_located((By.ID, "divColConsultarPor")))
 
         spinner_label.value = f"Preenchendo campos..."
-        page.update()
+        atualizar_texto_botao()
 
         dropdown_button = consultar_por.find_element(By.CLASS_NAME, "dropdown-toggle")
         dropdown_button.click()
@@ -140,7 +143,7 @@ def executar_consulta(page):
         botao_consultar.click()
 
         spinner_label.value = f"Buscando dados..."
-        page.update()
+        atualizar_texto_botao()
 
         # Verificar se há a mensagem de "Nenhum resultado encontrado"
         mensagem_erro = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
@@ -183,12 +186,14 @@ def executar_consulta(page):
         finalizar_custodias_app()
         return
  
-    finally:        
+    finally:    
+        # Garantir que o botão permaneça desabilitado
         start_button.disabled = True
-        start_button.update()
+        start_button.update()    
 
         if spinner_label:
-            spinner_label.value = ""
+            spinner_label.value = f"Em execução..."
+            atualizar_texto_botao()
             executado = True
             page.update()
         
@@ -228,6 +233,8 @@ def agendar_proxima_consulta(page):
     timer.start()
 
 def main(pg: ft.Page):
+    global start_button
+
     # from splash_screen import splash_screen  # Importa a função do arquivo splash_screen.py
     global driver, driver_pid, entry_data_inicio, entry_data_fim, spinner_label, page, ultima_consulta, proxima_consulta 
     page = pg
@@ -318,7 +325,7 @@ def main(pg: ft.Page):
                     ft.Container(
                         content=ft.Row(
                             controls=[
-                                spinner_label,
+                                # spinner_label,
                                 ultima_consulta,
                                 proxima_consulta,
                             ],
@@ -361,11 +368,19 @@ def initialize_webdriver():
         return None
 
 def iniciar_consulta(page, button):
-    start_button.disabled = True # Desabilita o botão para evitar cliques duplicados
-    button.content.controls[1] = ft.Text(" Em execução...", size=12, color=ft.colors.GREY)  # Atualiza apenas o texto
-    button.update()  # Atualiza o botão para refletir a mudança
-    spinner_label.value = f"Pesquisa iniciada..."
-    page.update()
+    global start_button
+    start_button = button  # Armazena o botão para referência
+    start_button.disabled = True
+    start_button.update()
+
+    alterar_status_execucao("Executando...")  # Atualiza o texto ao iniciar a consulta
+
+    # start_button.disabled = True # Desabilita o botão para evitar cliques duplicados
+    # button.content.controls[1] = ft.Text(" Em execução...", size=12, color=ft.colors.GREY)  # Atualiza apenas o texto
+    # spinner_label = ft.Text(" Em execução...", size=12, color=ft.colors.GREY)  # Atualiza apenas o texto
+    # button.update()  # Atualiza o botão para refletir a mudança
+    # spinner_label.value = f"Pesquisa iniciada..."
+    # page.update()
     executar_consulta(page)
 
 ###########################
@@ -483,6 +498,19 @@ def windowSize(page):
     page.window.min_width = 1200
     page.window.min_height = 900
     page.window.maximized = True # Maximiza a janela
+
+# Função para atualizar o texto do botão dinamicamente
+def atualizar_texto_botao():
+    """Atualiza o texto do botão com o valor atual de spinner_label."""
+    start_button.content.controls[1] = ft.Text(
+        spinner_label.value, size=12, color=ft.colors.GREY
+    )
+    start_button.update()  # Atualiza o botão na interface
+
+# Exemplo de como alterar o valor do spinner_label e refletir no botão
+def alterar_status_execucao(novo_texto):
+    spinner_label.value = novo_texto
+    atualizar_texto_botao()  # Chama a função para atualizar o texto do botão
 
 if __name__ == "__main__":
     ft.app(target=main)
