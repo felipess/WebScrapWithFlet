@@ -171,17 +171,26 @@ def executar_consulta(page):
                     td_html = td.get_attribute('innerHTML')
                     td_soup = BeautifulSoup(td_html, 'html.parser')
                     td_text = td_soup.get_text(separator=" ").split("Classe:")[0].strip()
+
+                    # Verifica se há um erro na linha
                     if "ocorreu um erro" in td_text.lower():
                         erro_encontrado = True
                         break
-                    conteudo_linha.append(td_text)
-                if not erro_encontrado and len(conteudo_linha) == len(titulos):
+
+                    # Adiciona apenas se não for um termo indesejado
+                    if td_text.lower() not in ["designada", "e-proc"]:
+                        conteudo_linha.append(td_text)
+
+                # Garante que a linha tenha o tamanho correto após a filtragem
+                if not erro_encontrado and len(conteudo_linha) == len(titulos) - 2:
                     resultados.append(conteudo_linha)
 
         if not resultados:
             resultados = []
             mensagem_nenhum_resultado = "Nenhum resultado encontrado."
 
+        print("Resultado Final:")
+        print(resultados)
         atualizar_resultados(resultados)
 
     except Exception as e:
