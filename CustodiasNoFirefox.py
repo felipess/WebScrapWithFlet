@@ -52,7 +52,8 @@ data_fim_default = (hoje + datetime.timedelta(days=1)).strftime("%d/%m/%Y")  # A
 
 mensagem_nenhum_resultado = None
 
-ordem_colunas = [4, 1, 2, 0, 3]  #Data/Autos/Juizo/Sala/Evento
+#Audiência de Custódia designada/ - 5010907-91.2024.4.04.7005/ - Juízo Federal de Garantias da 1ª VF de Ponta Grossa Contrabando/Dir. Autoral - 17/10/2024   17:00 - Sala:  Sala de audiências virtuais
+ordem_colunas = [4, 1, 2, 0, 3]  #Evento/Autos/Juizo/Data/Sala
 
 entry_data_inicio = ft.TextField(
     label="Data Início",

@@ -19,12 +19,15 @@ def copiar_linha(conteudo_linha, page, ordem_colunas):
     # Formata o texto final
     texto = ' - '.join(conteudo_ordenado)  # Une o conteúdo da linha em uma string
 
-    # Remove "Evento:" do texto, se presente
+    # Remove termo "Evento:" do texto, se presente
     texto = texto.replace("Evento:", "").strip()
+
+    # Remove termo "Sala:" do texto, se presente
+    texto = texto.replace("Sala:", "").strip()
     
     # Remove "Sala:" e tudo que vem depois
-    if "Sala:" in texto:
-        texto = texto.split("- Sala:")[0].strip()
+    # if "Sala:" in texto:
+    #     texto = texto.split("- Sala:")[0].strip()
     
     # Copia o texto para a área de transferência
     pyperclip.copy(texto)
