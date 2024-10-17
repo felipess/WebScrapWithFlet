@@ -261,10 +261,10 @@ def main(pg: ft.Page):
         page.open(pageWait)
         time.sleep(1)
         try:
-            if timers:
-                cancelar_timers(timers)
-            if driver:
-                finalizar_driver(driver)
+            # if timers:
+            #     cancelar_timers(timers)
+            # if driver:
+            #     finalizar_driver(driver)
             print("Destruindo programa...")
             page.window.destroy()
         except:
