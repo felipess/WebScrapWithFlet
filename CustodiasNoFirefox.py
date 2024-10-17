@@ -233,9 +233,10 @@ def executar_consulta(page):
         print("Execução finalizada")
 
 def agendar_proxima_consulta(page):
-    cancelar_timers(timers)
+    cancelar_timers(timers)  # Cancela timers antigos
     next_run = datetime.datetime.now() + datetime.timedelta(seconds=interval)
     delay = (next_run - datetime.datetime.now()).total_seconds()
+    print(f"Próxima execução agendada para: {next_run.strftime('%d/%m/%Y %H:%M:%S')}")  # Log
     timer = threading.Timer(delay, lambda: executar_consulta(page))
     timers.append(timer)
     timer.start()
@@ -256,7 +257,19 @@ def main(pg: ft.Page):
     pg.window.icon = "C:\\repos\\Github\\WebScrapWithFlet\\assets\\justice_icon.ico"
 
     def handle_yes(e):
-        page.window.destroy()
+        page.close(confirm_dialog)
+        page.open(pageWait)
+        time.sleep(1)
+        try:
+            if timers:
+                cancelar_timers(timers)
+            if driver:
+                finalizar_driver(driver)
+            print("Destruindo programa...")
+            page.window.destroy()
+        except:
+            print(f"Erro ao fechar com close(): {e}")
+            
 
     def handle_no(e):
         page.close(confirm_dialog)
@@ -270,6 +283,12 @@ def main(pg: ft.Page):
             ft.OutlinedButton("Não", on_click=handle_no),
         ],
         actions_alignment=ft.MainAxisAlignment.END,
+    )
+
+    pageWait = ft.AlertDialog(
+        modal=True,
+        title=ft.Text("Aguarde", size=16, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
+        content=ft.Text("Finalizando programa...", text_align=ft.TextAlign.CENTER),
     )
 
     # splash_screen(page)
