@@ -17,7 +17,9 @@ py -m PyInstaller --onefile --windowed --name CustodiasApp .\CustodiasNoFirefox.
 Deve arquivo deve estar em assests no formato .ico
 py -m PyInstaller --onefile --windowed --name CustodiasApp --icon="C:\repos\Github\WebScrapWithFlet\assets\justice_icon.ico" .\CustodiasNoFirefox.py
 
-# ficara dentro da pasta dist
+# Comando completo para adicionar >>> Icone na janela e empacotar dentro do .exe
+py -m PyInstaller --onefile --windowed --name CustodiasApp --icon="C:\repos\Github\WebScrapWithFlet\assets\justice_icon.ico" --add-data "C:\repos\Github\WebScrapWithFlet\assets\justice_icon.ico;assets" .\CustodiasNoFirefox.py
+
 
 
 Consulta de Audiências de Custódia

@@ -1,4 +1,5 @@
-
+import os
+import sys
 
 import flet as ft
 import time
@@ -254,7 +255,11 @@ def main(pg: ft.Page):
     # Impede o fechamento direto e define o evento personalizado de fechamento
     page.window.prevent_close = True
     page.window.on_event = on_window_event
-    pg.window.icon = "C:\\repos\\Github\\WebScrapWithFlet\\assets\\justice_icon.ico"
+    # pg.window.icon = "C:\\repos\\Github\\WebScrapWithFlet\\assets\\justice_icon.ico"
+    
+    # Defina o ícone dinamicamente
+    icon_path = get_asset_path('justice_icon.ico')
+    pg.window.icon = icon_path
 
     def handle_yes(e):
         page.close(confirm_dialog)
@@ -525,6 +530,15 @@ def atualizar_texto_botao():
 def alterar_status_execucao(novo_texto):
     spinner_label.value = novo_texto
     atualizar_texto_botao()  # Chama a função para atualizar o texto do botão
+
+def get_asset_path(filename):
+    """Retorna o caminho do arquivo, seja em modo executável ou desenvolvimento."""
+    if hasattr(sys, '_MEIPASS'):
+        # Estamos rodando no executável empacotado
+        return os.path.join(sys._MEIPASS, 'assets', filename)
+    else:
+        # Rodando em modo desenvolvimento
+        return os.path.join(os.path.dirname(__file__), 'assets', filename)
 
 if __name__ == "__main__":
     ft.app(target=main, assets_dir="assets")
