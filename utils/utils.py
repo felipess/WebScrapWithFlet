@@ -1,5 +1,6 @@
 import pyperclip
 import flet as ft
+import time
 
 def copiar_linha(conteudo_linha, page, ordem_colunas):
     conteudo_ordenado = [conteudo_linha[i] for i in ordem_colunas]
@@ -50,15 +51,15 @@ def obter_diferenca(resultados_novos, resultados_anteriores):
 
 def exibir_alerta(page):
     """Exibe um AlertDialog de confirmação."""
-    dlg = ft.AlertDialog(
+    copyAlert = ft.AlertDialog(
+        modal=True,
         title=ft.Text("Aviso", size=16, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
-        content=ft.Text("Texto copiado para a área de transferência."),
-        actions=[ft.TextButton("Fechar", on_click=lambda e: page.close(dlg))],
-        actions_alignment=ft.MainAxisAlignment.END,
-        # modal=True,
-        # on_dismiss=lambda e: page.add(ft.Text("Non-modal dialog dismissed")),
+        content=ft.Text("Texto copiado para área de transferência.", text_align=ft.TextAlign.CENTER),
     )
-    page.open(dlg)
+    page.open(copyAlert)
+    time.sleep(2)
+    page.close(copyAlert)
+
 
 def exibir_alerta_fechamento(page):
     dlg = ft.AlertDialog(
