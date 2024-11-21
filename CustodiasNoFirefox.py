@@ -1,6 +1,5 @@
 import os
 import sys
-
 import flet as ft
 import time
 import datetime
@@ -54,7 +53,7 @@ data_fim_default = (hoje + datetime.timedelta(days=1)).strftime("%d/%m/%Y")  # A
 mensagem_nenhum_resultado = None
 
 #Audiência de Custódia designada/ - 5010907-91.2024.4.04.7005/ - Juízo Federal de Garantias da 1ª VF de Ponta Grossa Contrabando/Dir. Autoral - 17/10/2024   17:00 - Sala:  Sala de audiências virtuais
-ordem_colunas = [4, 1, 2, 0, 3]  #Evento/Autos/Juizo/Data/Sala
+ordem_colunas = [4, 1, 2, 0, 3, 5]  #Evento/Autos/Juizo/Data/Sala/Status
 
 entry_data_inicio = ft.TextField(
     label="Data Início",
@@ -180,11 +179,11 @@ def executar_consulta(page):
                         break
 
                     # Adiciona apenas se não for um termo indesejado
-                    if td_text.lower() not in ["designada", "e-proc"]:
+                    if td_text.lower() not in ["realizada", "e-proc"]:
                         conteudo_linha.append(td_text)
 
                 # Garante que a linha tenha o tamanho correto após a filtragem
-                if not erro_encontrado and len(conteudo_linha) == len(titulos) - 2:
+                if not erro_encontrado and len(conteudo_linha) == len(titulos) - 1:
                     resultados.append(conteudo_linha)
 
         if not resultados:
@@ -444,6 +443,7 @@ def atualizar_resultados(resultados):
                 ft.DataCell(ft.Text(resultado[2], size=sizeFontRows)),
                 ft.DataCell(ft.Text(resultado[3], size=sizeFontRows)),
                 ft.DataCell(ft.Text(resultado[4], size=sizeFontRows)),
+                ft.DataCell(ft.Text(resultado[5], size=sizeFontRows)),
                 ft.DataCell(
                     ft.IconButton(
                         icon=ft.icons.CONTENT_COPY,
@@ -489,6 +489,7 @@ def atualizar_pagina(rows):
                     ft.DataColumn(ft.Text("Juízo", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Sala", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Evento", size=sizeFontRows)),
+                    ft.DataColumn(ft.Text("Status", size=sizeFontRows)),
                     ft.DataColumn(ft.Text("Ações", size=sizeFontRows)),
                 ],
                 rows=rows,
@@ -542,4 +543,3 @@ def get_asset_path(filename):
 
 if __name__ == "__main__":
     ft.app(target=main, assets_dir="assets")
-

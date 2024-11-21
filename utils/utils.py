@@ -14,7 +14,6 @@ def copiar_linha(conteudo_linha, page, ordem_colunas):
 
     if len(conteudo_ordenado) > 4:  # Verifica se a coluna 4 existe
         coluna_4_texto = conteudo_ordenado[4]
-        
         conteudo_ordenado[4] = coluna_4_texto  # Atualiza a coluna 4 com o texto modificado
 
     # Formata o texto final
