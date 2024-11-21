@@ -15,6 +15,9 @@ from utils.utils import (copiar_linha, obter_diferenca)
 from utils.utils_data import (converter_data, get_formatted_datetime)
 from utils.utils_closures import (cancelar_timers, finalizar_custodias_app, finalizar_driver, finalizar_driver_pid)
 
+from logs.config_log import configurar_logging 
+logger = configurar_logging()
+
 data_validade = datetime.datetime(2024, 12, 8)  # Data de validade
 
 # Variáveis globais
@@ -93,10 +96,10 @@ def executar_consulta(page):
     global driver, driver_pid, executado, mensagem_nenhum_resultado, resultados_anteriores
     executado = False
     if not verificar_validade():
-        print("Data de validade atingida. Encerrando consultas.")
+        logger.warning("Data de validade atingida. Encerrando consultas.")
         return
 
-    print("inicializando webdriver...")
+    logger.info("inicializando webdriver...")
 
     driver = initialize_webdriver()
     if not driver:
@@ -132,7 +135,7 @@ def executar_consulta(page):
         for option in options:
             if "Intervalo de Data e Competência" in option.text:
                 option.click()
-                print("Consultando por Intervalo de Data e Competência")
+                logger.info("Consultando por Intervalo de Data e Competência")
                 break
 
         data_inicio = entry_data_inicio.value.strip()
@@ -156,7 +159,7 @@ def executar_consulta(page):
         # Verificar se há a mensagem de "Nenhum resultado encontrado"
         mensagem_erro = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
         if "Nenhum resultado encontrado" in mensagem_erro.text:
-            print(f"Nenhum resultado encontrado.")
+            logger.warning(f"Nenhum resultado encontrado.")
 
         # Esperar até que a tabela esteja presente
         tabela = wait.until(EC.presence_of_element_located((By.ID, "tblAudienciasEproc")))
@@ -190,14 +193,14 @@ def executar_consulta(page):
             resultados = []
             mensagem_nenhum_resultado = "Nenhum resultado encontrado."
 
-        print("Resultado Final:")
-        print(resultados)
+        logger.debug("Resultado Final:")
+        logger.debug(resultados)
         atualizar_resultados(resultados)
 
     except Exception as e:
         spinner_label.value = f"Erro: {e}"
         page.update()
-        print(f"Erro geral: {e}")
+        logger.critical(f"Erro geral: {e}")
         resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se houver um erro geral
         atualizar_resultados(resultados)
         finalizar_custodias_app()
@@ -217,26 +220,26 @@ def executar_consulta(page):
         if driver:
             if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
                 pid = driver.service.process.pid
-                print(f"PID do driver: {pid}")
+                logger.info(f"PID do driver: {pid}")
             finalizar_driver(driver)
         if driver_pid:
             finalizar_driver_pid(driver_pid)
 
-
         running_event.clear()
+        
         if not termino_event.is_set():
-            print("Agendado")
+            logger.debug("Agendado")
             agendar_proxima_consulta(page)
         else:
-            print("Não Agendado")
+            logger.debug("Não Agendado")
 
-        print("Execução finalizada")
+        logger.info("Execução finalizada")
 
 def agendar_proxima_consulta(page):
     cancelar_timers(timers)  # Cancela timers antigos
     next_run = datetime.datetime.now() + datetime.timedelta(seconds=interval)
     delay = (next_run - datetime.datetime.now()).total_seconds()
-    print(f"Próxima execução agendada para: {next_run.strftime('%d/%m/%Y %H:%M:%S')}")  # Log
+    logger.info(f"Próxima execução agendada para: {next_run.strftime('%d/%m/%Y %H:%M:%S')}")  # Log
     timer = threading.Timer(delay, lambda: executar_consulta(page))
     timers.append(timer)
     timer.start()
@@ -269,10 +272,10 @@ def main(pg: ft.Page):
             #     cancelar_timers(timers)
             # if driver:
             #     finalizar_driver(driver)
-            print("Destruindo programa...")
+            logger.info("Destruindo programa...")
             page.window.destroy()
         except:
-            print(f"Erro ao fechar com close(): {e}")
+            logger.error(f"Erro ao fechar com close(): {e}")
             
 
     def handle_no(e):
@@ -385,10 +388,10 @@ def initialize_webdriver():
     try:
         driver = webdriver.Firefox(options=options)
         driver_pid = driver.service.process.pid  # Captura o PID do processo do driver
-        print(f"Driver inicializado com sucesso com PID: {driver_pid}")
+        logger.info(f"Driver inicializado com sucesso com PID: {driver_pid}")
         return driver
     except Exception as e:
-        print(f"Erro ao inicializar o driver: {e}")
+        logger.error(f"Erro ao inicializar o driver: {e}")
         return None
 
 def iniciar_consulta(page, button):

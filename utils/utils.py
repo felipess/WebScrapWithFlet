@@ -1,6 +1,8 @@
 import pyperclip
 import flet as ft
 import time
+from logs.config_log import configurar_logging 
+logger = configurar_logging()
 
 def copiar_linha(conteudo_linha, page, ordem_colunas):
     conteudo_ordenado = [conteudo_linha[i] for i in ordem_colunas]
@@ -32,7 +34,7 @@ def copiar_linha(conteudo_linha, page, ordem_colunas):
     # Copia o texto para a área de transferência
     pyperclip.copy(texto)
     exibir_alerta(page)
-    print(f"Copiado texto: {texto}")
+    logger.debug(f"Copiado texto: {texto}")
 
 def obter_diferenca(resultados_novos, resultados_anteriores):
     diferencas = []
