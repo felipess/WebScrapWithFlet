@@ -49,7 +49,11 @@ date_text_style = ft.TextStyle(
 )
 
 # Datas padrão
-hoje = datetime.datetime.now()
+# hoje = datetime.datetime.now()
+hoje = '2024-11-21'
+hoje = datetime.datetime.strptime(hoje, "%Y-%m-%d")  # Converte a string para datetime
+
+
 data_inicio_default = hoje.strftime("%d/%m/%Y")  # Hoje
 data_fim_default = (hoje + datetime.timedelta(days=1)).strftime("%d/%m/%Y")  # Amanhã
 
@@ -407,6 +411,7 @@ def iniciar_consulta(page, button):
 def verificar_validade():
     return datetime.datetime.now() <= data_validade
 
+
 def atualizar_resultados(resultados):
     global page, resultados_anteriores
     diferencas = obter_diferenca(resultados, resultados_anteriores)
@@ -425,7 +430,6 @@ def atualizar_resultados(resultados):
             open=True,
             show_close_icon=True,
             duration=interval * 1000 - 5000,
-            # close_icon_color=ft.colors.RED
         )
 
         page.overlay.append(snack_bar)
@@ -437,47 +441,25 @@ def atualizar_resultados(resultados):
         ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}"
         proxima_consulta.value = f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=interval):%H:%M:%S}"
 
-        # Preparar a tabela com resultados
-        rows = []
+        # Agrupar os resultados por status
+        resultados_por_status = {}
         for resultado in resultados:
-            row_cells = [
-                ft.DataCell(ft.Text(resultado[0], size=sizeFontRows)),
-                ft.DataCell(ft.Text(resultado[1], size=sizeFontRows)),
-                ft.DataCell(ft.Text(resultado[2], size=sizeFontRows)),
-                ft.DataCell(ft.Text(resultado[3], size=sizeFontRows)),
-                ft.DataCell(ft.Text(resultado[4], size=sizeFontRows)),
-                ft.DataCell(ft.Text(resultado[5], size=sizeFontRows)),
-                ft.DataCell(
-                    ft.IconButton(
-                        icon=ft.icons.CONTENT_COPY,
-                        icon_color=ft.colors.BLUE,
-                        on_click=lambda e, r=resultado: copiar_linha(r, page, ordem_colunas),
-                        icon_size=20,
-                        tooltip="Copiar"
-                    )
-                ),
-            ]
+            status = resultado[5]  # Considerando que o status está na coluna de índice 5
+            if status not in resultados_por_status:
+                resultados_por_status[status] = []
+            resultados_por_status[status].append(resultado)
 
-            rows.append(ft.DataRow(cells=row_cells))
-        atualizar_pagina(rows)
-
-def atualizar_pagina(rows):
-    global page
-    global mensagem_nenhum_resultado
-    # page.window.maximized = True
-
-    if page:
         # Remover a mensagem de "Nenhum resultado encontrado"
         if hasattr(page, 'mensagem_nenhum_resultado'):
             if page.mensagem_nenhum_resultado in page.controls:
                 page.controls.remove(page.mensagem_nenhum_resultado)
                 del page.mensagem_nenhum_resultado
 
-        #Remover a tabela de resultados
+        # Remover as tabelas anteriores
         if hasattr(page, 'data_table_container') and page.data_table_container in page.controls:
             page.controls.remove(page.data_table_container)
 
-
+        # Verificar se existe algum resultado
         if mensagem_nenhum_resultado != None:
             if not hasattr(page, 'mensagem_nenhum_resultado'):
                 page.mensagem_nenhum_resultado = ft.Text(mensagem_nenhum_resultado, size=sizeFontRows)
@@ -485,40 +467,73 @@ def atualizar_pagina(rows):
             if page.mensagem_nenhum_resultado not in page.controls:
                 page.controls.append(page.mensagem_nenhum_resultado)
         else:
-            data_table = ft.DataTable(
-                columns=[
-                    ft.DataColumn(ft.Text("Data/Hora", size=sizeFontRows)),
-                    ft.DataColumn(ft.Text("Autos", size=sizeFontRows)),
-                    ft.DataColumn(ft.Text("Juízo", size=sizeFontRows)),
-                    ft.DataColumn(ft.Text("Sala", size=sizeFontRows)),
-                    ft.DataColumn(ft.Text("Evento", size=sizeFontRows)),
-                    ft.DataColumn(ft.Text("Status", size=sizeFontRows)),
-                    ft.DataColumn(ft.Text("Ações", size=sizeFontRows)),
-                ],
-                rows=rows,
-                data_row_min_height=60,
-                data_row_max_height=80,
-                #width="100%",  ####aqui
-            )
+            # Criar uma tabela separada para cada grupo de status
+            for status, resultados_status in resultados_por_status.items():
+                rows = []
+                for resultado in resultados_status:
+                    row_cells = [
+                        ft.DataCell(ft.Text(resultado[0], size=sizeFontRows)),
+                        ft.DataCell(ft.Text(resultado[1], size=sizeFontRows)),
+                        ft.DataCell(ft.Text(resultado[2], size=sizeFontRows)),
+                        ft.DataCell(ft.Text(resultado[3], size=sizeFontRows)),
+                        ft.DataCell(ft.Text(resultado[4], size=sizeFontRows)),
+                        ft.DataCell(ft.Text(resultado[5], size=sizeFontRows)),
+                        ft.DataCell(
+                            ft.IconButton(
+                                icon=ft.icons.CONTENT_COPY,
+                                icon_color=ft.colors.BLUE,
+                                on_click=lambda e, r=resultado: copiar_linha(r, page, ordem_colunas),
+                                icon_size=20,
+                                tooltip="Copiar"
+                            )
+                        ),
+                    ]
+                    rows.append(ft.DataRow(cells=row_cells))
 
-            # Coloque o DataTable dentro de um Container
-            data_table_container = ft.Container(
-                content=ft.Column(
-                    controls=[data_table],
-                    scroll=ft.ScrollMode.ALWAYS,
-                    height=650,
-                ),
-                padding=ft.Padding(0, 10, 0, 10),
-            )
+                # Criação da tabela para este status
+                data_table = ft.DataTable(
+                    columns=[
+                        ft.DataColumn(ft.Text("Data/Hora", size=sizeFontRows)),
+                        ft.DataColumn(ft.Text("Autos", size=sizeFontRows)),
+                        ft.DataColumn(ft.Text("Juízo", size=sizeFontRows)),
+                        ft.DataColumn(ft.Text("Sala", size=sizeFontRows)),
+                        ft.DataColumn(ft.Text("Evento", size=sizeFontRows)),
+                        ft.DataColumn(ft.Text("Status", size=sizeFontRows)),
+                        ft.DataColumn(ft.Text("Ações", size=sizeFontRows)),
+                    ],
+                    rows=rows,
+                    data_row_min_height=60,
+                    data_row_max_height=80,
+                    border=ft.border.all(2, "grey"),
+                    bgcolor="grey",
+                    border_radius=10,
+                    heading_row_color=ft.colors.BLACK12,
+                    heading_row_height=50,
+                    data_row_color={ft.ControlState.HOVERED: "0x30FF0000"},
+                    divider_thickness=0,
+                    # column_spacing=10,
+                )
 
-            page.data_table_container = data_table_container
-            page.controls.append(page.data_table_container)
+                # Ajustando o Container para o DataTable
+                data_table_container = ft.Container(
+                    content=ft.Column(
+                        controls=[data_table],
+                        spacing=5,  # Ajuste de espaçamento entre os controles
+                    ),
+                    width=1750,  # Define a largura máxima do Container (ajuste conforme necessário)
+                )
+
+                page.controls.append(data_table_container)
+
         page.update()
+
 
 def windowSize(page):
     page.window.min_width = 1200
     page.window.min_height = 900
     page.window.maximized = True # Maximiza a janela
+    page.scroll = ft.ScrollMode.ALWAYS
+
 
 # Função para atualizar o texto do botão dinamicamente
 def atualizar_texto_botao():
