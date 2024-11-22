@@ -21,7 +21,7 @@ logger = configurar_logging()
 data_validade = datetime.datetime(2024, 12, 8)  # Data de validade
 
 # Variáveis globais
-VERSION = "4.2"
+VERSION = "4.3"
 driver = None
 driver_pid = None
 running_event = threading.Event()
@@ -49,10 +49,12 @@ date_text_style = ft.TextStyle(
 )
 
 # Datas padrão
-# hoje = datetime.datetime.now()
-hoje = '2024-11-21'
-hoje = datetime.datetime.strptime(hoje, "%Y-%m-%d")  # Converte a string para datetime
+hoje = datetime.datetime.now()
 
+###para testes###
+# hoje = '2024-11-21'
+# hoje = datetime.datetime.strptime(hoje, "%Y-%m-%d")  
+###para testes###
 
 data_inicio_default = hoje.strftime("%d/%m/%Y")  # Hoje
 data_fim_default = (hoje + datetime.timedelta(days=1)).strftime("%d/%m/%Y")  # Amanhã
