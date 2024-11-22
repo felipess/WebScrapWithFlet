@@ -484,7 +484,7 @@ def atualizar_resultados(resultados):
             # Contêiner para as tabelas
             data_table_container = ft.Container(
                 content=ft.Column(
-                    spacing=10,  # Ajuste de espaçamento entre as tabelas
+                    spacing=20,  # Ajuste de espaçamento entre as tabelas
                 ),
                 width=1750,  # Define a largura máxima do Container
             )
@@ -494,58 +494,104 @@ def atualizar_resultados(resultados):
 
             # Mapeamento de cores para cada status
             status_colors = {
-                "DESIGNADA": ft.colors.GREEN,
-                "REALIZADA": ft.colors.GREY_300,
-                "REDESIGNADA": ft.colors.RED_300,
-                # Adicione outras cores para outros status, se necessário
+                "REDESIGNADA": ft.colors.ORANGE_300,
+                "DESIGNADA": ft.colors.BLUE_300,
+                #"REALIZADA": ft.colors.GREY, #Definido localmente na tabela              
             }
 
-            # Criar tabelas para cada grupo de status
+            # Criar listas para armazenar as tabelas
+            tabelas_ordenadas = []
+
+            # Criar a tabela para cada status, exceto "REALIZADA"
             for status, resultados_status in resultados_por_status.items():
-                # Escolher a cor de fundo baseada no status
-                bgcolor = status_colors.get(status, ft.colors.WHITE)  # Cor padrão caso o status não tenha uma cor definida
+                if status != "REALIZADA":
+                    # Escolher a cor de fundo baseada no status
+                    bordercolor = status_colors.get(status)  # Cor padrão caso o status não tenha uma cor definida
 
-                # Criação da tabela para um status específico
-                rows = []
-                for resultado in resultados_status:
-                    row_cells = [
-                        ft.DataCell(ft.Text(resultado[0], size=sizeFontRows, width=80)),
-                        ft.DataCell(ft.Text(resultado[1], size=sizeFontRows, width=190)),
-                        ft.DataCell(ft.Text(resultado[2], size=sizeFontRows, width=350)),
-                        ft.DataCell(ft.Text(resultado[3], size=sizeFontRows, width=250)),
-                        ft.DataCell(ft.Text(resultado[4], size=sizeFontRows, width=350)),
-                        ft.DataCell(ft.Text(resultado[5], size=sizeFontRows, width=110)),
-                        ft.DataCell(
-                            ft.IconButton(
-                                icon=ft.icons.CONTENT_COPY,
-                                icon_color=ft.colors.BLUE,
-                                on_click=lambda e, r=resultado: copiar_linha(r, page, ordem_colunas),
-                                icon_size=20,
-                                tooltip="Copiar"
-                            )
-                        ),
-                    ]
-                    rows.append(ft.DataRow(cells=row_cells))
+                    # Criar as linhas da tabela
+                    rows = []
+                    for resultado in resultados_status:
+                        row_cells = [
+                            ft.DataCell(ft.Text(resultado[0], size=sizeFontRows, width=80)),
+                            ft.DataCell(ft.Text(resultado[1], size=sizeFontRows, width=190)),
+                            ft.DataCell(ft.Text(resultado[2], size=sizeFontRows, width=330)),
+                            ft.DataCell(ft.Text(resultado[3], size=sizeFontRows, width=250)),
+                            ft.DataCell(ft.Text(resultado[4], size=sizeFontRows, width=350)),
+                            ft.DataCell(ft.Text(resultado[5], size=sizeFontRows, width=110)),
+                            ft.DataCell(
+                                ft.IconButton(
+                                    icon=ft.icons.CONTENT_COPY,
+                                    icon_color=ft.colors.BLUE,
+                                    on_click=lambda e, r=resultado: copiar_linha(r, page, ordem_colunas),
+                                    icon_size=20,
+                                    tooltip="Copiar"
+                                )
+                            ),
+                        ]
+                        rows.append(ft.DataRow(cells=row_cells))
 
-                # Criar a tabela para este status com o cabeçalho já configurado
-                data_table = ft.DataTable(
-                    columns=table_columns,  # Cabeçalho configurado aqui
-                    rows=rows,
-                    data_row_min_height=60,
-                    data_row_max_height=100,
-                    border=ft.border.all(2, bgcolor),
-                    # bgcolor=bgcolor,  # Define a cor de fundo da tabela de acordo com o status
-                    border_radius=10,
-                    heading_row_color=ft.colors.BLACK12,
-                    heading_row_height=50,
-                    data_row_color={ft.ControlState.HOVERED: "0x30FF0000"},
-                    divider_thickness=0,
-                )
+                    # Criar a tabela
+                    data_table = ft.DataTable(
+                        columns=table_columns,  # Cabeçalho configurado aqui
+                        rows=rows,
+                        data_row_min_height=60,
+                        data_row_max_height=80,
+                        border=ft.border.all(2, bordercolor),
+                        border_radius=10,
+                        heading_row_color=ft.colors.BLACK12,
+                        heading_row_height=50,
+                        data_row_color={ft.ControlState.HOVERED: "0x30FF0000"},
+                        divider_thickness=0,
+                    )
 
-                # Adicionar a tabela criada ao contêiner
-                data_table_container.content.controls.append(data_table)
+                    # Adicionar a tabela à lista
+                    tabelas_ordenadas.append(data_table)
+
+                # Criar a tabela para o status "REALIZADA" (garantindo que será a última)
+                if "REALIZADA" in resultados_por_status:
+                    rows_realizada = []
+                    for resultado in resultados_por_status["REALIZADA"]:
+                        row_cells = [
+                            ft.DataCell(ft.Text(resultado[0], size=sizeFontRows, width=80)),
+                            ft.DataCell(ft.Text(resultado[1], size=sizeFontRows, width=190)),
+                            ft.DataCell(ft.Text(resultado[2], size=sizeFontRows, width=330)),
+                            ft.DataCell(ft.Text(resultado[3], size=sizeFontRows, width=250)),
+                            ft.DataCell(ft.Text(resultado[4], size=sizeFontRows, width=350)),
+                            ft.DataCell(ft.Text(resultado[5], size=sizeFontRows, width=110)),
+                            ft.DataCell(
+                                ft.IconButton(
+                                    icon=ft.icons.CONTENT_COPY,
+                                    icon_color=ft.colors.BLUE,
+                                    on_click=lambda e, r=resultado: copiar_linha(r, page, ordem_colunas),
+                                    icon_size=20,
+                                    tooltip="Copiar"
+                                )
+                            ),
+                        ]
+                        rows_realizada.append(ft.DataRow(cells=row_cells))
+
+                    # Criar a tabela "REALIZADA"
+                    data_table_realizada = ft.DataTable(
+                        columns=table_columns,  # Cabeçalho configurado aqui
+                        rows=rows_realizada,
+                        data_row_min_height=60,
+                        data_row_max_height=80,
+                        border=ft.border.all(2, 'grey'),
+                        border_radius=10,
+                        heading_row_color=ft.colors.BLACK12,
+                        heading_row_height=50,
+                        data_row_color={ft.ControlState.HOVERED: "0x30FF0000"},
+                        divider_thickness=0,
+                    )
+
+            # Adicionar a tabela "REALIZADA" por último
+            tabelas_ordenadas.append(data_table_realizada)
+
+            # Adicionar todas as tabelas ao contêiner de tabelas
+            data_table_container.content.controls.extend(tabelas_ordenadas)
 
             page.update()
+
 
 def windowSize(page):
     page.window.min_width = 1200
