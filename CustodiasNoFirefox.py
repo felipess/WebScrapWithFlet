@@ -186,7 +186,8 @@ def executar_consulta(page):
                         break
 
                     # Adiciona apenas se não for um termo indesejado
-                    if td_text.lower() not in ["realizada", "e-proc"]:
+                    # if td_text.lower() not in ["realizada", "e-proc"]:
+                    if td_text.lower() not in ["e-proc"]:
                         conteudo_linha.append(td_text)
 
                 # Garante que a linha tenha o tamanho correto após a filtragem
@@ -351,7 +352,7 @@ def main(pg: ft.Page):
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                        spacing=10,
+                        spacing=5,
                     ),
                     ft.Container(
                         content=ft.Row(
@@ -376,7 +377,7 @@ def main(pg: ft.Page):
                 ],
                 alignment=ft.CrossAxisAlignment.CENTER,
 
-                spacing=20,
+                spacing=10,
             )
         )
     )
@@ -414,6 +415,8 @@ def verificar_validade():
 
 def atualizar_resultados(resultados):
     global page, resultados_anteriores
+
+    # Verifica se houve diferença nos resultados
     diferencas = obter_diferenca(resultados, resultados_anteriores)
     if diferencas:
         mensagens = []
@@ -467,17 +470,51 @@ def atualizar_resultados(resultados):
             if page.mensagem_nenhum_resultado not in page.controls:
                 page.controls.append(page.mensagem_nenhum_resultado)
         else:
-            # Criar uma tabela separada para cada grupo de status
+            # Criar o cabeçalho uma única vez
+            table_columns = [
+                ft.DataColumn(ft.Text("Data/Hora", size=sizeFontRows)),
+                ft.DataColumn(ft.Text("Autos", size=sizeFontRows)),
+                ft.DataColumn(ft.Text("Juízo", size=sizeFontRows)),
+                ft.DataColumn(ft.Text("Sala", size=sizeFontRows)),
+                ft.DataColumn(ft.Text("Evento", size=sizeFontRows)),
+                ft.DataColumn(ft.Text("Status", size=sizeFontRows)),
+                ft.DataColumn(ft.Text("Ações", size=sizeFontRows)),
+            ]
+
+            # Contêiner para as tabelas
+            data_table_container = ft.Container(
+                content=ft.Column(
+                    spacing=10,  # Ajuste de espaçamento entre as tabelas
+                ),
+                width=1750,  # Define a largura máxima do Container
+            )
+
+            # Adicionar o container para as tabelas na página
+            page.controls.append(data_table_container)
+
+            # Mapeamento de cores para cada status
+            status_colors = {
+                "DESIGNADA": ft.colors.GREEN,
+                "REALIZADA": ft.colors.GREY_300,
+                "REDESIGNADA": ft.colors.RED_300,
+                # Adicione outras cores para outros status, se necessário
+            }
+
+            # Criar tabelas para cada grupo de status
             for status, resultados_status in resultados_por_status.items():
+                # Escolher a cor de fundo baseada no status
+                bgcolor = status_colors.get(status, ft.colors.WHITE)  # Cor padrão caso o status não tenha uma cor definida
+
+                # Criação da tabela para um status específico
                 rows = []
                 for resultado in resultados_status:
                     row_cells = [
-                        ft.DataCell(ft.Text(resultado[0], size=sizeFontRows)),
-                        ft.DataCell(ft.Text(resultado[1], size=sizeFontRows)),
-                        ft.DataCell(ft.Text(resultado[2], size=sizeFontRows)),
-                        ft.DataCell(ft.Text(resultado[3], size=sizeFontRows)),
-                        ft.DataCell(ft.Text(resultado[4], size=sizeFontRows)),
-                        ft.DataCell(ft.Text(resultado[5], size=sizeFontRows)),
+                        ft.DataCell(ft.Text(resultado[0], size=sizeFontRows, width=80)),
+                        ft.DataCell(ft.Text(resultado[1], size=sizeFontRows, width=190)),
+                        ft.DataCell(ft.Text(resultado[2], size=sizeFontRows, width=350)),
+                        ft.DataCell(ft.Text(resultado[3], size=sizeFontRows, width=250)),
+                        ft.DataCell(ft.Text(resultado[4], size=sizeFontRows, width=350)),
+                        ft.DataCell(ft.Text(resultado[5], size=sizeFontRows, width=110)),
                         ft.DataCell(
                             ft.IconButton(
                                 icon=ft.icons.CONTENT_COPY,
@@ -490,43 +527,25 @@ def atualizar_resultados(resultados):
                     ]
                     rows.append(ft.DataRow(cells=row_cells))
 
-                # Criação da tabela para este status
+                # Criar a tabela para este status com o cabeçalho já configurado
                 data_table = ft.DataTable(
-                    columns=[
-                        ft.DataColumn(ft.Text("Data/Hora", size=sizeFontRows)),
-                        ft.DataColumn(ft.Text("Autos", size=sizeFontRows)),
-                        ft.DataColumn(ft.Text("Juízo", size=sizeFontRows)),
-                        ft.DataColumn(ft.Text("Sala", size=sizeFontRows)),
-                        ft.DataColumn(ft.Text("Evento", size=sizeFontRows)),
-                        ft.DataColumn(ft.Text("Status", size=sizeFontRows)),
-                        ft.DataColumn(ft.Text("Ações", size=sizeFontRows)),
-                    ],
+                    columns=table_columns,  # Cabeçalho configurado aqui
                     rows=rows,
                     data_row_min_height=60,
-                    data_row_max_height=80,
-                    border=ft.border.all(2, "grey"),
-                    bgcolor="grey",
+                    data_row_max_height=100,
+                    border=ft.border.all(2, bgcolor),
+                    # bgcolor=bgcolor,  # Define a cor de fundo da tabela de acordo com o status
                     border_radius=10,
                     heading_row_color=ft.colors.BLACK12,
                     heading_row_height=50,
                     data_row_color={ft.ControlState.HOVERED: "0x30FF0000"},
                     divider_thickness=0,
-                    # column_spacing=10,
                 )
 
-                # Ajustando o Container para o DataTable
-                data_table_container = ft.Container(
-                    content=ft.Column(
-                        controls=[data_table],
-                        spacing=5,  # Ajuste de espaçamento entre os controles
-                    ),
-                    width=1750,  # Define a largura máxima do Container (ajuste conforme necessário)
-                )
+                # Adicionar a tabela criada ao contêiner
+                data_table_container.content.controls.append(data_table)
 
-                page.controls.append(data_table_container)
-
-        page.update()
-
+            page.update()
 
 def windowSize(page):
     page.window.min_width = 1200
