@@ -50,7 +50,7 @@ date_text_style = ft.TextStyle(
 
 # Datas padrão
 hoje = datetime.datetime.now()
-# hoje = '2024-11-21'
+# hoje = '2024-11-22'
 # hoje = datetime.datetime.strptime(hoje, "%Y-%m-%d")  # Converte a string para datetime
 
 
@@ -164,39 +164,54 @@ def executar_consulta(page):
         mensagem_erro = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
         if "Nenhum resultado encontrado" in mensagem_erro.text:
             logger.warning(f"Nenhum resultado encontrado.")
+            mensagem_nenhum_resultado = "Nenhum resultado encontrado."
 
         # Esperar até que a tabela esteja presente
-        tabela = wait.until(EC.presence_of_element_located((By.ID, "tblAudienciasEproc")))
+        tabela = WebDriverWait(driver, 1).until(
+            EC.presence_of_element_located((By.ID, "tblAudienciasEproc"))
+        )
+        
         linhas = tabela.find_elements(By.TAG_NAME, "tr")
 
-        for linha in linhas:
-            texto_normalizado = linha.text.lower()
-            if any(termo in texto_normalizado for termo in termos_buscados):
-                tds = linha.find_elements(By.TAG_NAME, "td")
-                conteudo_linha = []
-                erro_encontrado = False
-                for td in tds:
-                    td_html = td.get_attribute('innerHTML')
-                    td_soup = BeautifulSoup(td_html, 'html.parser')
-                    td_text = td_soup.get_text(separator=" ").split("Classe:")[0].strip()
+        # Verifica se há resultados
+        if len(linhas) == 0:
+            # Caso não tenha linhas, significa que não há resultados
+            logger.warning("Nenhum resultado encontrado.")
+            mensagem_nenhum_resultado = "Nenhum resultado encontrado."
+        else: 
+            for linha in linhas:
+                texto_normalizado = linha.text.lower()
+                if any(termo in texto_normalizado for termo in termos_buscados):
+                    tds = linha.find_elements(By.TAG_NAME, "td")
+                    conteudo_linha = []
+                    erro_encontrado = False
+                    for td in tds:
+                        td_html = td.get_attribute('innerHTML')
+                        td_soup = BeautifulSoup(td_html, 'html.parser')
+                        td_text = td_soup.get_text(separator=" ").split("Classe:")[0].strip()
 
-                    # Verifica se há um erro na linha
-                    if "ocorreu um erro" in td_text.lower():
-                        erro_encontrado = True
-                        break
+                        # Verifica se há um erro na linha
+                        if "ocorreu um erro" in td_text.lower():
+                            erro_encontrado = True
+                            break
 
-                    # Adiciona apenas se não for um termo indesejado
-                    # if td_text.lower() not in ["realizada", "e-proc"]:
-                    if td_text.lower() not in ["e-proc"]:
-                        conteudo_linha.append(td_text)
+                        # Adiciona apenas se não for um termo indesejado
+                        # if td_text.lower() not in ["realizada", "e-proc"]:
+                        if td_text.lower() not in ["e-proc"]:
+                            conteudo_linha.append(td_text)
 
-                # Garante que a linha tenha o tamanho correto após a filtragem
-                if not erro_encontrado and len(conteudo_linha) == len(titulos) - 1:
-                    resultados.append(conteudo_linha)
-
-        if not resultados:
+                    # Garante que a linha tenha o tamanho correto após a filtragem
+                    if not erro_encontrado and len(conteudo_linha) == len(titulos) - 1:
+                        resultados.append(conteudo_linha)
+                
+        if resultados:
+            atualizar_resultados(resultados)
+        else:
             resultados = []
             mensagem_nenhum_resultado = "Nenhum resultado encontrado."
+            logger.warning("Nenhum resultado válido encontrado após processamento das linhas.")
+            
+
 
         logger.debug("Resultado Final:")
         logger.debug(resultados)
@@ -204,10 +219,11 @@ def executar_consulta(page):
 
     except Exception as e:
         spinner_label.value = f"Erro: {e}"
-        page.update()
         logger.critical(f"Erro geral: {e}")
-        resultados.append([""] * len(titulos))  # Adiciona uma linha vazia se houver um erro geral
-        atualizar_resultados(resultados)
+        mensagem_nenhum_resultado = "Nenhum resultado encontrado."
+        logger.warning("Tabela não encontrada, o que indica que não há resultados.")
+        atualizar_resultados([])  # Atualiza a página com uma lista vazia ou uma mensagem de erro
+        page.update()
         finalizar_custodias_app()
         return
 
@@ -443,7 +459,7 @@ def atualizar_resultados(resultados):
     if page:
         ultima_consulta.value = f"Última consulta: {get_formatted_datetime()}"
         proxima_consulta.value = f"Próxima consulta: {datetime.datetime.now() + datetime.timedelta(seconds=interval):%H:%M:%S}"
-
+        
         # Verificar se o contêiner de tabelas já existe
         if not hasattr(page, 'data_table_container'):
             page.data_table_container = ft.Container(
@@ -473,9 +489,18 @@ def atualizar_resultados(resultados):
 
         # Verificar se existe algum resultado
         if mensagem_nenhum_resultado != None:
-            if not hasattr(page, 'mensagem_nenhum_resultado'):
-                page.mensagem_nenhum_resultado = ft.Text(mensagem_nenhum_resultado, size=sizeFontRows)
+            if not hasattr(page, 'mensagem_nenhum_resultado'):  # Verifica se o controle não foi adicionado ainda
+                # Criando a caixa de mensagem formatada
+                page.mensagem_nenhum_resultado = ft.Container(
+                    content=ft.Text(mensagem_nenhum_resultado, size=14),  # Texto na caixa
+                    # alignment=ft.Alignment(0, 0),  # Centraliza o texto na caixa
+                    padding=ft.Padding(50, 10, 50, 10),  # Adiciona padding dentro da caixa
+                    border=ft.border.all(2),
+                    # bgcolor=ft.colors.RED_600,  # Fundo vermelho para destacar
+                    border_radius=8  # Bordas arredondadas
+                )
 
+            # Verifica se a mensagem não foi adicionada na página
             if page.mensagem_nenhum_resultado not in page.controls:
                 page.controls.append(page.mensagem_nenhum_resultado)
         else:
