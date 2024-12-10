@@ -18,7 +18,7 @@ from utils.utils_closures import (cancelar_timers, finalizar_custodias_app, fina
 from logs.config_log import configurar_logging 
 logger = configurar_logging()
 
-data_validade = datetime.datetime(2024, 1, 10)  # Data de validade
+data_validade = datetime.datetime(2025, 1, 10)  # Data de validade
 
 # Variáveis globais
 VERSION = "4.3"
