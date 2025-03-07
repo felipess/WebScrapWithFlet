@@ -18,7 +18,7 @@ from utils.utils_closures import (cancelar_timers, finalizar_custodias_app, fina
 from logs.config_log import configurar_logging 
 logger = configurar_logging()
 
-data_validade = datetime.datetime(2025, 4, 22)  # Data de validade
+data_validade = datetime.datetime(2050, 4, 22)  # Data de validade
 
 # Variáveis globais
 VERSION = "4.3"
@@ -27,7 +27,7 @@ driver_pid = None
 running_event = threading.Event()
 termino_event = threading.Event()
 executado = False
-interval = 900
+interval = 600
 resultados_anteriores = []
 timers = []
 snackbars = []
