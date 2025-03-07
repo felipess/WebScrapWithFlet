@@ -18,7 +18,7 @@ from utils.utils_closures import (cancelar_timers, finalizar_custodias_app, fina
 from logs.config_log import configurar_logging 
 logger = configurar_logging()
 
-data_validade = datetime.datetime(2025, 1, 10)  # Data de validade
+data_validade = datetime.datetime(2025, 4, 22)  # Data de validade
 
 # Variáveis globais
 VERSION = "4.3"
@@ -544,9 +544,9 @@ def atualizar_resultados(resultados):
                     row_cells = [
                         ft.DataCell(ft.Text(resultado[0], size=sizeFontRows, width=80)),
                         ft.DataCell(ft.Text(resultado[1], size=sizeFontRows, width=190)),
-                        ft.DataCell(ft.Text(resultado[2], size=sizeFontRows, width=330)),
-                        ft.DataCell(ft.Text(resultado[3], size=sizeFontRows, width=250)),
-                        ft.DataCell(ft.Text(resultado[4], size=sizeFontRows, width=350)),
+                        ft.DataCell(ft.Text(resultado[2], size=sizeFontRows)),
+                        ft.DataCell(ft.Text(resultado[3], size=sizeFontRows)),
+                        ft.DataCell(ft.Text(resultado[4], size=sizeFontRows)),
                         ft.DataCell(ft.Text(resultado[5], size=sizeFontRows, width=110)),
                         ft.DataCell(
                             ft.IconButton(
