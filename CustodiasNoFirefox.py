@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup
 from utils.utils import (copiar_linha, obter_diferenca)
 from utils.utils_data import (converter_data, get_formatted_datetime)
 from utils.utils_closures import (cancelar_timers, finalizar_custodias_app, finalizar_driver, finalizar_driver_pid)
+from selenium.common.exceptions import WebDriverException
 
 from logs.config_log import configurar_logging 
 logger = configurar_logging()
@@ -59,7 +60,6 @@ data_fim_default = (hoje + datetime.timedelta(days=1)).strftime("%d/%m/%Y")  # A
 
 mensagem_nenhum_resultado = None
 
-#Audiência de Custódia designada/ - 5010907-91.2024.4.04.7005/ - Juízo Federal de Garantias da 1ª VF de Ponta Grossa Contrabando/Dir. Autoral - 17/10/2024   17:00 - Sala:  Sala de audiências virtuais
 ordem_colunas = [4, 1, 2, 0, 3, 5]  #Evento/Autos/Juizo/Data/Sala/Status
 
 entry_data_inicio = ft.TextField(
@@ -84,7 +84,6 @@ entry_data_fim = ft.TextField(
 start_button = ft.CupertinoFilledButton(
     content=ft.Row(
         controls=[
-            # ft.Icon(ft.icons.PLAY_ARROW, size=16),
             ft.Text(spinner_label.value, size=sizeFontRows),  # Inicialmente exibe o valor de spinner_label
         ],
         alignment=ft.MainAxisAlignment.CENTER
@@ -121,15 +120,19 @@ def executar_consulta(page):
         # spinner_label.value = f"Navegando..."
         # atualizar_texto_botao()
 
-        driver.get("https://eproc.jfpr.jus.br/eprocV2/externo_controlador.php?acao=pauta_audiencias")
+        #driver.get("https://eproc.jfpr.jus.br/eprocV2/externo_controlador.php?acao=pauta_audiencias")
+        if not acessar_url_com_retry("https://eproc.jfpr.jus.br/eprocV2/externo_controlador.php?acao=pauta_audiencias"):
+            logger.error("Não foi possível acessar o site após várias tentativas")
+            mensagem_nenhum_resultado = "Não foi possível acessar o site. Verifique sua conexão ou tente novamente mais tarde."
+            atualizar_resultados([])
+            page.update()
+            finalizar_custodias_app()
+            return
 
         time.sleep(1)
 
         wait = WebDriverWait(driver, 30)
         consultar_por = wait.until(EC.presence_of_element_located((By.ID, "divColConsultarPor")))
-
-        # spinner_label.value = f"Preenchendo..."
-        # atualizar_texto_botao()
 
         dropdown_button = consultar_por.find_element(By.CLASS_NAME, "dropdown-toggle")
         dropdown_button.click()
@@ -156,9 +159,6 @@ def executar_consulta(page):
 
         botao_consultar = wait.until(EC.element_to_be_clickable((By.ID, "btnConsultar")))
         botao_consultar.click()
-
-        # spinner_label.value = f"Buscando..."
-        # atualizar_texto_botao()
 
         # Verificar se há a mensagem de "Nenhum resultado encontrado"
         mensagem_erro = wait.until(EC.presence_of_element_located((By.ID, "divInfraAreaTabela")))
@@ -211,8 +211,6 @@ def executar_consulta(page):
             mensagem_nenhum_resultado = "Nenhum resultado encontrado."
             logger.warning("Nenhum resultado válido encontrado após processamento das linhas.")
             
-
-
         logger.debug("Resultado Final:")
         logger.debug(resultados)
         atualizar_resultados(resultados)
@@ -267,7 +265,6 @@ def agendar_proxima_consulta(page):
 
 def main(pg: ft.Page):
     global start_button
-    # from splash_screen import splash_screen  # Importa a função do arquivo splash_screen.py
     global driver, driver_pid, entry_data_inicio, entry_data_fim, spinner_label, page, ultima_consulta, proxima_consulta
     page = pg
 
@@ -275,10 +272,8 @@ def main(pg: ft.Page):
         if e.data == "close":
             page.open(confirm_dialog)
 
-    # Impede o fechamento direto e define o evento personalizado de fechamento
     page.window.prevent_close = True
     page.window.on_event = on_window_event
-    # pg.window.icon = "C:\\repos\\Github\\WebScrapWithFlet\\assets\\justice_icon.ico"
     
     # Defina o ícone dinamicamente
     icon_path = get_asset_path('justice_icon.ico')
@@ -289,10 +284,6 @@ def main(pg: ft.Page):
         page.open(pageWait)
         time.sleep(1)
         try:
-            # if timers:
-            #     cancelar_timers(timers)
-            # if driver:
-            #     finalizar_driver(driver)
             logger.info("Destruindo programa...")
             page.window.destroy()
         except:
@@ -318,9 +309,6 @@ def main(pg: ft.Page):
         title=ft.Text("Aguarde", size=16, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
         content=ft.Text("Finalizando programa...", text_align=ft.TextAlign.CENTER),
     )
-
-    # splash_screen(page)
-
     windowSize(page)
 
     page.title = f"Pesquisa custódias JFPR - Versão {VERSION} - Valido até {converter_data(data_validade)}"
@@ -423,8 +411,6 @@ def iniciar_consulta(page, button):
     alterar_status_execucao("Buscando...")  # Atualiza o texto ao iniciar a consulta
     executar_consulta(page)
 
-###########################
-
 def verificar_validade():
     return datetime.datetime.now() <= data_validade
 
@@ -493,10 +479,8 @@ def atualizar_resultados(resultados):
                 # Criando a caixa de mensagem formatada
                 page.mensagem_nenhum_resultado = ft.Container(
                     content=ft.Text(mensagem_nenhum_resultado, size=14),  # Texto na caixa
-                    # alignment=ft.Alignment(0, 0),  # Centraliza o texto na caixa
                     padding=ft.Padding(50, 10, 50, 10),  # Adiciona padding dentro da caixa
                     border=ft.border.all(2),
-                    # bgcolor=ft.colors.RED_600,  # Fundo vermelho para destacar
                     border_radius=8  # Bordas arredondadas
                 )
 
@@ -522,12 +506,10 @@ def atualizar_resultados(resultados):
                 "REALIZADA": 3  # "REALIZADA" recebe o maior índice para ser criada por último
             }
 
-            # Mapeamento de cores para cada status
             status_colors = {
                 "REDESIGNADA": ft.colors.RED_300,
                 "DESIGNADA": ft.colors.BLUE_300,
                 "REALIZADA": ft.colors.GREY_200,
-                # Adicione outras cores para outros status, se necessário
             }
 
             # Criar uma lista para armazenar as tabelas
@@ -574,18 +556,11 @@ def atualizar_resultados(resultados):
                     divider_thickness=0,
                 )
 
-                # Adicionar a tabela à lista
                 tabelas_ordenadas.append(data_table)
 
-            # Adicionar todas as tabelas ao contêiner de tabelas
             page.data_table_container.content.controls.extend(tabelas_ordenadas)
 
-            # Atualiza a página para refletir as tabelas criadas
             page.update()
-
-
-
-
 
 def windowSize(page):
     page.window.min_width = 1200
@@ -593,8 +568,6 @@ def windowSize(page):
     page.window.maximized = True # Maximiza a janela
     page.scroll = ft.ScrollMode.ALWAYS
 
-
-# Função para atualizar o texto do botão dinamicamente
 def atualizar_texto_botao():
     """Atualiza o texto do botão com o valor atual de spinner_label."""
     start_button.content.controls[0] = ft.Text(
@@ -604,7 +577,6 @@ def atualizar_texto_botao():
     )
     start_button.update()  # Atualiza o botão na interface
 
-# Exemplo de como alterar o valor do spinner_label e refletir no botão
 def alterar_status_execucao(novo_texto):
     spinner_label.value = novo_texto
     atualizar_texto_botao()  # Chama a função para atualizar o texto do botão
@@ -612,11 +584,19 @@ def alterar_status_execucao(novo_texto):
 def get_asset_path(filename):
     """Retorna o caminho do arquivo, seja em modo executável ou desenvolvimento."""
     if hasattr(sys, '_MEIPASS'):
-        # Estamos rodando no executável empacotado
         return os.path.join(sys._MEIPASS, 'assets', filename)
     else:
-        # Rodando em modo desenvolvimento
         return os.path.join(os.path.dirname(__file__), 'assets', filename)
+
+def acessar_url_com_retry(url, max_tentativas=3):
+    for tentativa in range(max_tentativas):
+        try:
+            driver.get(url)
+            return True
+        except WebDriverException as e:
+            logger.warning(f"Tentativa {tentativa+1}/{max_tentativas} falhou: {e}")
+            time.sleep(60)  # Esperar 60 seg antes de tentar novamente
+    return False
 
 if __name__ == "__main__":
     ft.app(target=main, assets_dir="assets")
