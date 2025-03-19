@@ -40,6 +40,7 @@ def finalizar_driver(driver):
             logger.info("Driver do Selenium encerrado com sucesso.")
         except Exception as e:
             logger.error(f"Ocorreu um erro ao encerrar o driver: {e}")
+            pass
     else:
         logger.warning("Nenhum driver para encerrar.")
         return

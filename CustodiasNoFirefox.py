@@ -39,6 +39,9 @@ spinner_label = ft.Text(value="Iniciar", size=sizeFontRows)
 ultima_consulta = ft.Text(f"", size=sizeFontRows, color=ft.colors.GREY_600)
 proxima_consulta = ft.Text(f"", size=sizeFontRows, color=ft.colors.GREY_600)
 
+ultima_verificacao_ativa = datetime.datetime.now()
+tempo_maximo_inatividade = interval * 1.5  # 1.5x o intervalo normal
+
 text_style = ft.TextStyle(
     color=ft.colors.GREY_600,
     size=sizeFontRows,
@@ -96,8 +99,10 @@ start_button = ft.CupertinoFilledButton(
 )
 
 def executar_consulta(page):
-    global driver, driver_pid, executado, mensagem_nenhum_resultado, resultados_anteriores
+    global driver, driver_pid, executado, mensagem_nenhum_resultado, resultados_anteriores, ultima_verificacao_ativa
     executado = False
+    ultima_verificacao_ativa = datetime.datetime.now()
+    
     if not verificar_validade():
         logger.warning("Data de validade atingida. Encerrando consultas.")
         return
@@ -255,13 +260,47 @@ def executar_consulta(page):
         logger.info("Execução finalizada")
 
 def agendar_proxima_consulta(page):
+    global timers
     cancelar_timers(timers)  # Cancela timers antigos
     next_run = datetime.datetime.now() + datetime.timedelta(seconds=interval)
     delay = (next_run - datetime.datetime.now()).total_seconds()
     logger.info(f"Próxima execução agendada para: {next_run.strftime('%d/%m/%Y %H:%M:%S')}")  # Log
+    
+    # Adiciona um timer para verificação de inatividade a cada 30 segundos
+    verificacao_timer = threading.Timer(30, lambda: verificar_inatividade(page))
+    timers.append(verificacao_timer)
+    verificacao_timer.start()
+    
+    # Timer normal para a próxima consulta
     timer = threading.Timer(delay, lambda: executar_consulta(page))
     timers.append(timer)
     timer.start()
+
+def verificar_inatividade(page):
+    global ultima_verificacao_ativa, timers
+    
+    agora = datetime.datetime.now()
+    tempo_inativo = (agora - ultima_verificacao_ativa).total_seconds()
+    
+    # Atualiza o timestamp da última verificação
+    ultima_verificacao_ativa = agora
+    
+    # Se estiver inativo por mais tempo que o limite, reinicia a consulta
+    if tempo_inativo > tempo_maximo_inatividade and not running_event.is_set():
+        logger.warning(f"Detectada possível suspensão do sistema. Tempo inativo: {tempo_inativo:.2f} segundos")
+        
+        # Cancela todos os timers atuais
+        cancelar_timers(timers)
+        
+        # Reinicia a consulta imediatamente
+        logger.info("Reiniciando consultas após suspensão...")
+        executar_consulta(page)
+    else:
+        # Agenda a próxima verificação se o programa ainda estiver em execução
+        if not termino_event.is_set():
+            verificacao_timer = threading.Timer(30, lambda: verificar_inatividade(page))
+            timers.append(verificacao_timer)
+            verificacao_timer.start()
 
 def main(pg: ft.Page):
     global start_button
